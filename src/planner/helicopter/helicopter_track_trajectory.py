@@ -90,7 +90,7 @@ def test_tracking_controller_(
         # Control law
         # u_result[:, t] = np.random.randn(4)
         u_result[:, t] = hover_trims + tracking_controller[t].dot(
-            np.append(x_result[:, t], 1) - np.append(trajectory[t], 1)
+            np.append(x_result[:, t] - trajectory[t], 1)
         )
 
         # Simulate

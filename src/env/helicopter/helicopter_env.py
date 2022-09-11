@@ -69,6 +69,24 @@ class HelicopterEnv:
         return Fned, Txyz
 
 
+class LinearizedHelicopterEnv:
+    def __init__(self, time_varying):
+        self.time_varying = time_varying
+
+    def step(self, x0, u0, linearized_helicopter_model, t=None):
+        if self.time_varying and t is None:
+            raise Exception("Time varying env needs t to be specified")
+
+        if self.time_varying:
+            return linearized_helicopter_model.A[t].dot(
+                np.append(x0, 1)
+            ) + linearized_helicopter_model.B[t].dot(u0)
+
+        return linearized_helicopter_model.A.dot(
+            np.append(x0, 1)
+        ) + linearized_helicopter_model.B.dot(u0)
+
+
 def setup_env():
     helicopter_model = HelicopterModel()
     helicopter_index = HelicopterIndex()

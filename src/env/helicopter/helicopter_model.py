@@ -42,3 +42,10 @@ class HelicopterIndex:
         self.pqr = np.arange(k, k + 3)
         k += 3
         self.axis_angle = np.arange(k, k + 3)
+
+
+class LinearizedHelicopterModel:
+    def __init__(self, A, B, time_varying):
+        self.A = A
+        self.B = B
+        self.time_varying = time_varying
