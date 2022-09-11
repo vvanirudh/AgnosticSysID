@@ -1,0 +1,5 @@
+numpy
+ipython
+matplotlib
+ipdb
+scipy
