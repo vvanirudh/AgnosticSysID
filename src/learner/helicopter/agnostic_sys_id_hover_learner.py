@@ -24,7 +24,11 @@ def initial_model():
 
 def desired_trajectory_exploration_distribution(H, noise_state, noise_control):
     """
-    Exploration distribution is encoded as a list of tuples of tuples where each element of the list contains ((s, n_s), (u, n_u)) where s, n_s represents the mean and std of the gaussian distribution for state, and u, n_u represents the mean and std of the gaussian distribution for control
+    Exploration distribution is encoded as a list of tuples of tuples
+    where each element of the list contains ((s, n_s), (u, n_u)) where
+    s, n_s represents the mean and std of the gaussian distribution for
+    state, and u, n_u represents the mean and std of the gaussian
+    distribution for control
     """
     exploration_distribution = []
     for t in range(H):
