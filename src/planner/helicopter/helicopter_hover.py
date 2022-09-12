@@ -72,7 +72,8 @@ def test_hover_controller_(
             x_result[:, t], u_result[:, t], dt, helicopter_model, helicopter_index, noise_F_t
         )
 
-    print("Reached end of horizon", H)
+    if early_stop:
+        print("Reached end of horizon", H)
 
     if plot:
         plt.subplot(3, 1, 1)

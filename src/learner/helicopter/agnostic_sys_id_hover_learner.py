@@ -9,6 +9,10 @@ from src.planner.helicopter.helicopter_hover import (
     test_hover_controller_,
 )
 from src.planner.lqr import lqr_lti
+from src.learner.helicopter.exploration_distribution import (
+    desired_trajectory_exploration_distribution,
+    expert_exploration_distribution,
+)
 
 import numpy as np
 from collections import deque
@@ -20,39 +24,6 @@ def initial_model():
     B = np.eye(13, 4)
 
     return LinearizedHelicopterModel(A, B, time_varying=False)
-
-
-def desired_trajectory_exploration_distribution(H, noise_state, noise_control):
-    """
-    Exploration distribution is encoded as a list of tuples of tuples
-    where each element of the list contains ((s, n_s), (u, n_u)) where
-    s, n_s represents the mean and std of the gaussian distribution for
-    state, and u, n_u represents the mean and std of the gaussian
-    distribution for control
-    """
-    exploration_distribution = []
-    for t in range(H):
-        exploration_distribution.append(
-            ((hover_at_zero, noise_state), (hover_trims, noise_control))
-        )
-    return exploration_distribution
-
-
-def expert_exploration_distribution(
-    helicopter_env, helicopter_model, helicopter_index, H, noise_state, noise_control
-):
-    expert_controller = hover_controller(helicopter_model, helicopter_index, helicopter_env)
-    exploration_distribution = []
-    state = hover_at_zero.copy()
-    for t in range(H):
-        control = hover_trims + expert_controller.dot(np.append(state - hover_at_zero, 1))
-        exploration_distribution.append(((state, noise_state), (control, noise_control)))
-        # TODO: Should I be adding noise when rolling out expert controller?
-        state = helicopter_env.step(
-            state, control, dt, helicopter_model, helicopter_index, noise=np.random.randn(6)
-        )
-
-    return exploration_distribution
 
 
 def optimal_controller(linearized_helicopter_model):
@@ -124,17 +95,6 @@ def agnostic_sys_id_hover_learner_(
 ):
     nominal_model = initial_model()
     model = initial_model()
-    # A, B = linearized_heli_dynamics_2(
-    #     hover_at_zero,
-    #     hover_at_zero,
-    #     hover_trims,
-    #     dt,
-    #     helicopter_model,
-    #     helicopter_index,
-    #     helicopter_env,
-    # )
-    # nominal_model = LinearizedHelicopterModel(A, B, time_varying=False)
-    # model = LinearizedHelicopterModel(A, B, time_varying=False)
     controller = optimal_controller(model)
     H = 400
     dataset = deque(maxlen=10000)
@@ -170,26 +130,21 @@ def agnostic_sys_id_hover_learner_(
                 ## Sample from exploration distribution
                 # Sample a random timestamp
                 t = np.random.randint(H)
-                # Get mean, std from exploration distribution
-                (mean_state, std_state), (mean_control, std_control) = exploration_distribution[t]
                 # Sample state and control
-                state, control = np.random.normal(mean_state, std_state), np.random.normal(
-                    mean_control, std_control
-                )
+                state, control = exploration_distribution.sample(t)
                 # Get next state from env
                 next_state = helicopter_env.step(
                     state, control, dt, helicopter_model, helicopter_index, noise=np.random.randn(6)
                 )
-                # Add to dataset
-                dataset.append((state, control, next_state))
             else:
                 ## Sample from current policy
                 # Sample a random timestamp
                 t = np.random.randint(u_result.shape[1])
                 # Get state, control, and next state from current policy
                 state, control, next_state = x_result[:, t], u_result[:, t], x_result[:, t + 1]
-                # Add to dataset
-                dataset.append((state, control, next_state))
+
+            # Add to dataset
+            dataset.append((state, control, next_state))
 
         # Fit new model
         model = fit_model(dataset, nominal_model)
