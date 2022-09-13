@@ -2,8 +2,9 @@ import numpy as np
 
 
 class LinearController:
-    def __init__(self, K, nominal_state, nominal_control, time_invariant=True):
+    def __init__(self, K, P, nominal_state, nominal_control, time_invariant=True):
         self.K = K
+        self.P = P
         self.nominal_state = nominal_state
         self.nominal_control = nominal_control
         self.time_invariant = time_invariant

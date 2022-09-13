@@ -13,7 +13,7 @@ def lqr_lti(A, B, Q, R):
         if np.linalg.norm(Knew - K) < 1e-6:
             break
         K = Knew.copy()
-    return K
+    return K, P
 
 
 def lqr_ltv(A, B, Q, R, Qfinal):
@@ -30,7 +30,7 @@ def lqr_ltv(A, B, Q, R, Qfinal):
             + (A[t] + B[t].dot(K[t])).T.dot(P[t + 1].dot(A[t] + B[t].dot(K[t])))
         )
 
-    return K
+    return K, P
 
 
 def lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu):

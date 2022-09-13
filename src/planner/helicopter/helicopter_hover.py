@@ -4,35 +4,18 @@ from src.env.helicopter.helicopter_model import dt
 from src.env.helicopter.linearized_helicopter_dynamics import linearized_heli_dynamics_2
 from src.planner.lqr import lqr_lti, lqr_ltv, lqr_linearized_tv
 from src.planner.helicopter.controller import LinearController, LinearControllerWithOffset
+from src.planner.helicopter.cost import cost_control, cost_final, cost_state, cost_trajectory
 import numpy as np
 import matplotlib.pyplot as plt
 
 hover_at_zero = np.zeros(12)
 hover_trims = np.zeros(4)
-
-
-def cost_trajectory(x_result, u_result, x_target, u_target, Q, R, Qfinal):
-    H = u_result.shape[1]
-    cost = 0.0
-    for t in range(H):
-        cost += 0.5 * np.append(x_result[:, t] - x_target[:, t], 1).T.dot(
-            Q.dot(np.append(x_result[:, t] - x_target[:, t], 1))
-        )
-        cost += 0.5 * (u_result[:, t] - u_target[:, t]).T.dot(
-            R.dot(u_result[:, t] - u_target[:, t])
-        )
-
-    cost += 0.5 * np.append(x_result[:, H] - x_target[:, H], 1).T.dot(
-        Qfinal.dot(np.append(x_result[:, H] - x_target[:, H], 1))
-    )
-    return cost
+Q = np.diag(np.ones(13))
+R = np.eye(4)
+Qfinal = Q.copy()
 
 
 def hover_controller(helicopter_model, helicopter_index, helicopter_env):
-    Q = np.diag(np.ones(13))
-    R = np.eye(4)
-    Qfinal = Q.copy()
-
     ## Design LQR controller
     ## Suggestion:
     # 1. Find A, B such that x_{t+1} = Ax_t + Bu_t
@@ -48,9 +31,9 @@ def hover_controller(helicopter_model, helicopter_index, helicopter_env):
         helicopter_env,
     )
 
-    K = lqr_lti(A, B, Q, R)
+    K, P = lqr_lti(A, B, Q, R)
 
-    return LinearController(K, hover_at_zero, hover_trims, time_invariant=True)
+    return LinearController(K, P, hover_at_zero, hover_trims, time_invariant=True)
 
 
 def test_hover_controller_(
@@ -67,7 +50,7 @@ def test_hover_controller_(
     x_result[:, 0] = hover_at_zero.copy()
 
     u_result = np.zeros((4, H))
-
+    cost = 0.0
     for t in range(H):
 
         u_result[:, t] = (
@@ -75,6 +58,8 @@ def test_hover_controller_(
             if alpha is None
             else hover_controller.act(x_result[:, t], t, alpha=alpha)
         )
+        cost += cost_state(x_result[:, t], hover_at_zero, Q)
+        cost += cost_control(u_result[:, t], hover_trims, R)
 
         if (
             early_stop
@@ -84,13 +69,14 @@ def test_hover_controller_(
             > 5
         ):
             print("Stopping early at t:", t)
-            return x_result[:, : t + 1], u_result[:, :t]
+            return x_result[:, : t + 1], u_result[:, :t], cost
 
         # Simulate
         noise_F_t = np.random.randn(6)
         x_result[:, t + 1] = helicopter_env.step(
             x_result[:, t], u_result[:, t], dt, helicopter_model, helicopter_index, noise_F_t
         )
+    cost += cost_final(x_result[:, H], hover_at_zero, Qfinal)
 
     if early_stop:
         print("Reached end of horizon", H)
@@ -119,7 +105,7 @@ def test_hover_controller_(
 
         plt.show()
 
-    return x_result, u_result
+    return x_result, u_result, cost
 
 
 def test_hover_controller():

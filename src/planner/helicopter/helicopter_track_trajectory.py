@@ -74,9 +74,9 @@ def tracking_controller(trajectory, helicopter_model, helicopter_index, helicopt
         A.append(A_t)
         B.append(B_t)
 
-    K = lqr_ltv(A, B, Q, R, Qfinal)
+    K, P = lqr_ltv(A, B, Q, R, Qfinal)
 
-    return LinearController(K, trajectory, [hover_trims for _ in range(H)], time_invariant=False)
+    return LinearController(K, P, trajectory, [hover_trims for _ in range(H)], time_invariant=False)
 
 
 def test_tracking_controller_(

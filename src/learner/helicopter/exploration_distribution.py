@@ -40,7 +40,7 @@ def expert_exploration_distribution(
     exploration_distribution = ExplorationDistribution(H)
     state = hover_at_zero.copy()
     for t in range(H):
-        control = hover_trims + expert_controller.dot(np.append(state - hover_at_zero, 1))
+        control = expert_controller.act(state, t)
         exploration_distribution.update(state, control, noise_state, noise_control, t)
         # TODO: Should I be adding noise when rolling out expert controller?
         state = helicopter_env.step(
