@@ -2,6 +2,7 @@ from src.env.helicopter.helicopter_env import setup_env
 from src.env.helicopter.helicopter_model import dt, HelicopterIndex
 from src.env.helicopter.linearized_helicopter_dynamics import linearized_heli_dynamics_2
 from src.planner.lqr import lqr_ltv
+from src.planner.helicopter.controller import LinearController
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -75,7 +76,7 @@ def tracking_controller(trajectory, helicopter_model, helicopter_index, helicopt
 
     K = lqr_ltv(A, B, Q, R, Qfinal)
 
-    return K
+    return LinearController(K, trajectory, [hover_trims for _ in range(H)], time_invariant=False)
 
 
 def test_tracking_controller_(
@@ -87,11 +88,8 @@ def test_tracking_controller_(
 
     x_result[:, 0] = trajectory[0, :]
     for t in range(H):
-        # Control law
-        # u_result[:, t] = np.random.randn(4)
-        u_result[:, t] = hover_trims + tracking_controller[t].dot(
-            np.append(x_result[:, t] - trajectory[t], 1)
-        )
+
+        u_result[:, t] = tracking_controller.act(x_result[:, t], t)
 
         # Simulate
         noise_F_T = np.random.randn(6)

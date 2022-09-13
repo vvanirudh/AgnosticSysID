@@ -2,12 +2,30 @@ import warnings
 from src.env.helicopter.helicopter_env import setup_env
 from src.env.helicopter.helicopter_model import dt
 from src.env.helicopter.linearized_helicopter_dynamics import linearized_heli_dynamics_2
-from src.planner.lqr import lqr_lti
+from src.planner.lqr import lqr_lti, lqr_ltv, lqr_linearized_tv
+from src.planner.helicopter.controller import LinearController, LinearControllerWithOffset
 import numpy as np
 import matplotlib.pyplot as plt
 
 hover_at_zero = np.zeros(12)
 hover_trims = np.zeros(4)
+
+
+def cost_trajectory(x_result, u_result, x_target, u_target, Q, R, Qfinal):
+    H = u_result.shape[1]
+    cost = 0.0
+    for t in range(H):
+        cost += 0.5 * np.append(x_result[:, t] - x_target[:, t], 1).T.dot(
+            Q.dot(np.append(x_result[:, t] - x_target[:, t], 1))
+        )
+        cost += 0.5 * (u_result[:, t] - u_target[:, t]).T.dot(
+            R.dot(u_result[:, t] - u_target[:, t])
+        )
+
+    cost += 0.5 * np.append(x_result[:, H] - x_target[:, H], 1).T.dot(
+        Qfinal.dot(np.append(x_result[:, H] - x_target[:, H], 1))
+    )
+    return cost
 
 
 def hover_controller(helicopter_model, helicopter_index, helicopter_env):
@@ -32,7 +50,7 @@ def hover_controller(helicopter_model, helicopter_index, helicopter_env):
 
     K = lqr_lti(A, B, Q, R)
 
-    return K
+    return LinearController(K, hover_at_zero, hover_trims, time_invariant=True)
 
 
 def test_hover_controller_(
@@ -43,6 +61,7 @@ def test_hover_controller_(
     H,
     plot=True,
     early_stop=False,
+    alpha=None,
 ):
     x_result = np.zeros((12, H + 1))
     x_result[:, 0] = hover_at_zero.copy()
@@ -50,10 +69,11 @@ def test_hover_controller_(
     u_result = np.zeros((4, H))
 
     for t in range(H):
-        # Control law; should fill in the control law
-        # u_result[:, t] = np.random.randn(4)
-        u_result[:, t] = hover_trims + hover_controller.dot(
-            np.append(x_result[:, t] - hover_at_zero, 1)
+
+        u_result[:, t] = (
+            hover_controller.act(x_result[:, t], t)
+            if alpha is None
+            else hover_controller.act(x_result[:, t], t, alpha=alpha)
         )
 
         if (
@@ -103,6 +123,7 @@ def test_hover_controller_(
 
 
 def test_hover_controller():
+    np.random.seed(0)
     model, index, env = setup_env()
     controller = hover_controller(model, index, env)
     test_hover_controller_(controller, model, index, env, H=300, plot=True)

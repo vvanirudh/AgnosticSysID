@@ -9,6 +9,7 @@ from src.planner.helicopter.helicopter_hover import (
     test_hover_controller_,
 )
 from src.planner.lqr import lqr_lti
+from src.planner.helicopter.controller import LinearController
 from src.learner.helicopter.exploration_distribution import (
     desired_trajectory_exploration_distribution,
     expert_exploration_distribution,
@@ -19,11 +20,11 @@ from collections import deque
 import torch
 
 
-def initial_model():
-    A = np.eye(13)
-    B = np.eye(13, 4)
+def initial_model(H, time_varying=False):
+    A = np.eye(13) if not time_varying else [np.eye(13) for _ in range(H)]
+    B = np.eye(13, 4) if not time_varying else [np.eye(13, 4) for _ in range(H)]
 
-    return LinearizedHelicopterModel(A, B, time_varying=False)
+    return LinearizedHelicopterModel(A, B, time_varying=time_varying)
 
 
 def optimal_controller(linearized_helicopter_model):
@@ -33,7 +34,7 @@ def optimal_controller(linearized_helicopter_model):
 
     K = lqr_lti(linearized_helicopter_model.A, linearized_helicopter_model.B, Q, R)
 
-    return K
+    return LinearController(K, hover_at_zero, hover_trims, time_invariant=True)
 
 
 def fit_model(dataset, nominal_model):
@@ -93,10 +94,10 @@ def agnostic_sys_id_hover_learner_(
     num_samples_per_iteration=100,
     exploration_distribution_type="desired_trajectory",
 ):
-    nominal_model = initial_model()
-    model = initial_model()
-    controller = optimal_controller(model)
     H = 400
+    nominal_model = initial_model(H)
+    model = initial_model(H)
+    controller = optimal_controller(model)
     dataset = deque(maxlen=10000)
 
     if exploration_distribution_type == "desired_trajectory":
