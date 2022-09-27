@@ -27,8 +27,7 @@ import numpy as np
 import ray
 from collections import deque
 import matplotlib.pyplot as plt
-
-WARM_START_ITERATION = 10
+import time
 
 
 def agnostic_sys_id_hover_learner_(
@@ -36,6 +35,7 @@ def agnostic_sys_id_hover_learner_(
     helicopter_model,
     helicopter_index,
     linearized_model: bool,
+    pdl: bool,
     num_iterations=100,
     num_samples_per_iteration=100,
     exploration_distribution_type="desired_trajectory",
@@ -74,8 +74,9 @@ def agnostic_sys_id_hover_learner_(
             controller, x_target, u_target, helicopter_model, helicopter_index, helicopter_env, H
         )
     )
-
+    total_time = 0.0
     for n in range(num_iterations):
+        start = time.time()
         # Rollout controller in real world
         x_result, u_result, _ = test_hover_controller_(
             controller,
@@ -119,11 +120,12 @@ def agnostic_sys_id_hover_learner_(
         )
 
         # Compute new optimal controller
-        controller = (
-            optimal_controller_for_linearized_model(model)
-            if linearized_model
-            else optimal_ilqr_controller_for_parameterized_model(model, H)
-        )
+        if linearized_model:
+            controller = optimal_controller_for_linearized_model(model)
+        elif pdl:
+            controller = optimal_controller_for_parameterized_model(model)
+        else:
+            controller = optimal_ilqr_controller_for_parameterized_model(model, H)
 
         # Evaluate controller
         costs.append(
@@ -137,7 +139,10 @@ def agnostic_sys_id_hover_learner_(
                 H,
             )
         )
+        end = time.time()
+        total_time += end - start
 
+    avg_time = total_time / num_iterations
     best_controller = hover_controller(helicopter_model, helicopter_index, helicopter_env)
     best_cost = evaluate_controller(
         best_controller, x_target, u_target, helicopter_model, helicopter_index, helicopter_env, H
@@ -154,14 +159,17 @@ def agnostic_sys_id_hover_learner_(
     plt.xlabel("Number of iterations")
     plt.ylabel("Cost")
     plt.yscale("log")
-    plt.show()
+    plt.title("Average time per iteration: " + str(avg_time))
+    exp_name = "agnostic_sysid" if not pdl else "agnostic_sysid_pdl"
+    plt.savefig(exp_name + ".png")
+    # plt.show()
 
     return controller
 
 
-def agnostic_sys_id_hover_learner(linearized_model: bool):
+def agnostic_sys_id_hover_learner(linearized_model: bool, pdl: bool):
     np.random.seed(0)
     # if not linearized_model:
     #     ray.init()
     model, index, env = setup_env()
-    agnostic_sys_id_hover_learner_(env, model, index, linearized_model)
+    agnostic_sys_id_hover_learner_(env, model, index, linearized_model, pdl)

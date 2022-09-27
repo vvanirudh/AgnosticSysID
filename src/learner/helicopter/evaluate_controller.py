@@ -69,9 +69,9 @@ def optimal_ilqr_controller_for_parameterized_model(model, H, controller=None):
     helicopter_env = HelicopterEnv()
     helicopter_index = HelicopterIndex()
     if controller is None:
-        # controller = hover_controller(model, helicopter_index, helicopter_env)
+        controller = hover_controller(model, helicopter_index, helicopter_env)
         # controller = zero_controller(model)
-        controller = random_controller(model)
+        # controller = random_controller(model)
 
     x_result, u_result, cost = test_hover_controller_(
         controller,
