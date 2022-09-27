@@ -86,6 +86,7 @@ def linearized_heli_dynamics(
         B.append((fx_t1p - fx_t1m) / epsilon[i] / 2)
 
     A = np.array(A).T
+    B = np.array(B).T
 
     last_column_A = (x1 - xt1 + A.dot(xt0 - x0) + B.dot(ut0 - u0)).reshape(-1, 1)
     A = np.hstack([A, last_column_A])

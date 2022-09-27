@@ -9,7 +9,7 @@ class LinearController:
         self.nominal_control = nominal_control
         self.time_invariant = time_invariant
 
-    def act(self, x, t):
+    def act(self, x, t, alpha=None):
         return (
             self.nominal_control + self.K.dot(np.append(x - self.nominal_state, 1))
             if self.time_invariant
@@ -27,9 +27,19 @@ class LinearControllerWithOffset:
 
     def act(self, x, t, alpha=1.0):
         return (
-            self.nominal_control + alpha * self.k + self.K.dot(np.append(x - self.nominal_state, 1))
+            (1 - alpha) * self.nominal_control
+            + alpha * self.k
+            + self.K.dot(np.append(x - (1 - alpha) * self.nominal_state, 1))
             if self.time_invariant
-            else self.nominal_control[t]
+            else (1 - alpha) * self.nominal_control[t]
             + alpha * self.k[t]
-            + self.K[t].dot(np.append(x - self.nominal_state[t], 1))
+            + self.K[t].dot(np.append(x - (1 - alpha) * self.nominal_state[t], 1))
         )
+
+
+class ManualController:
+    def __init__(self, controls):
+        self.controls = controls
+
+    def act(self, x, t, alpha=None):
+        return self.controls[t]

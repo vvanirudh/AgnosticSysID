@@ -31,6 +31,93 @@ class HelicopterModel:
             ]
         )
 
+    @property
+    def params(self):
+        return np.concatenate(
+            [
+                [self.m, self.Ixx, self.Iyy, self.Izz],
+                self.Tx,
+                self.Ty,
+                self.Tz,
+                [self.Fx],
+                self.Fy,
+                self.Fz,
+            ]
+        )
+
+    @staticmethod
+    def unpack_params(params):
+        assert params.shape[0] == 19
+        return [
+            params[0],
+            params[1],
+            params[2],
+            params[3],
+            params[4:7],
+            params[7:10],
+            params[10:13],
+            params[13],
+            params[14:16],
+            params[16:19],
+        ]
+
+
+class ParameterizedHelicopterModel:
+    def __init__(self, m, Ixx, Iyy, Izz, Tx, Ty, Tz, Fx, Fy, Fz):
+        self.m = m
+        self.Ixx = Ixx
+        self.Iyy = Iyy
+        self.Izz = Izz
+        self.Ixy = self.Ixz = self.Iyz = 0
+
+        self.Tx = Tx * self.Ixx
+        self.Ty = Ty * self.Iyy
+        self.Tz = Tz * self.Izz
+
+        self.Fx = Fx * m
+        self.Fy = Fy * m
+        self.Fz = Fz * m
+
+    @property
+    def I(self):
+        return np.array(
+            [
+                [self.Ixx, self.Ixy, self.Ixz],
+                [self.Ixy, self.Iyy, self.Iyz],
+                [self.Ixz, self.Iyz, self.Izz],
+            ]
+        )
+
+    @property
+    def params(self):
+        return np.concatenate(
+            [
+                [self.m, self.Ixx, self.Iyy, self.Izz],
+                self.Tx,
+                self.Ty,
+                self.Tz,
+                [self.Fx],
+                self.Fy,
+                self.Fz,
+            ]
+        )
+
+    @staticmethod
+    def unpack_params(params):
+        assert params.shape[0] == 19
+        return [
+            params[0],
+            params[1],
+            params[2],
+            params[3],
+            params[4:7],
+            params[7:10],
+            params[10:13],
+            params[13],
+            params[14:16],
+            params[16:19],
+        ]
+
 
 class HelicopterIndex:
     def __init__(self):

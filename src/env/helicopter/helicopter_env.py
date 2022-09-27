@@ -1,9 +1,14 @@
-from src.env.helicopter.helicopter_model import HelicopterIndex, HelicopterModel
+from src.env.helicopter.helicopter_model import (
+    HelicopterIndex,
+    HelicopterModel,
+    ParameterizedHelicopterModel,
+)
 from src.utils.quaternion_from_axis_rotation import quaternion_from_axis_rotation
 from src.utils.axis_angle_dynamics_update import axis_angle_dynamics_update
 from src.utils.rotate_vector import rotate_vector
 from src.utils.express_vector_in_quat_frame import express_vector_in_quat_frame
 import numpy as np
+import ray
 
 
 class HelicopterEnv:
@@ -93,3 +98,20 @@ def setup_env():
     helicopter_env = HelicopterEnv()
 
     return helicopter_model, helicopter_index, helicopter_env
+
+
+# Simple wrapper function
+@ray.remote
+def step_parameterized_model(x0, u0, dt, params):
+    env = HelicopterEnv()
+    model = ParameterizedHelicopterModel(*ParameterizedHelicopterModel.unpack_params(params))
+    index = HelicopterIndex()
+
+    return env.step(x0, u0, dt, model, index)
+
+
+def step_batch_parameterized_model(X, U, dt, params):
+    N = X.shape[0]
+    return ray.get(
+        [step_parameterized_model.remote(X[i, :], U[i, :], dt, params) for i in range(N)]
+    )

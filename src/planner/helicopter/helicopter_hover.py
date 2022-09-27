@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 hover_at_zero = np.zeros(12)
 hover_trims = np.zeros(4)
-Q = np.diag(np.ones(13))
+Q = np.eye(13)
 R = np.eye(4)
 Qfinal = Q.copy()
 
@@ -45,6 +45,7 @@ def test_hover_controller_(
     plot=True,
     early_stop=False,
     alpha=None,
+    add_noise=True,
 ):
     x_result = np.zeros((12, H + 1))
     x_result[:, 0] = hover_at_zero.copy()
@@ -53,11 +54,8 @@ def test_hover_controller_(
     cost = 0.0
     for t in range(H):
 
-        u_result[:, t] = (
-            hover_controller.act(x_result[:, t], t)
-            if alpha is None
-            else hover_controller.act(x_result[:, t], t, alpha=alpha)
-        )
+        u_result[:, t] = hover_controller.act(x_result[:, t], t, alpha=alpha)
+
         cost += cost_state(x_result[:, t], hover_at_zero, Q)
         cost += cost_control(u_result[:, t], hover_trims, R)
 
@@ -72,7 +70,7 @@ def test_hover_controller_(
             return x_result[:, : t + 1], u_result[:, :t], cost
 
         # Simulate
-        noise_F_t = np.random.randn(6)
+        noise_F_t = np.random.randn(6) if add_noise else np.zeros(6)
         x_result[:, t + 1] = helicopter_env.step(
             x_result[:, t], u_result[:, t], dt, helicopter_model, helicopter_index, noise_F_t
         )
