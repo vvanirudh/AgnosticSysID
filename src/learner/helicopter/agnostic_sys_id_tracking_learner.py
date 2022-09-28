@@ -35,7 +35,7 @@ def agnostic_sys_id_tracking_learner_(
     helicopter_index: HelicopterIndex,
     linearized_model: bool,
     pdl: bool,
-    num_iterations=100,
+    num_iterations=200,
     num_samples_per_iteration=500,
     exploration_distribution_type="desired_trajectory",
     plot=True,
@@ -172,7 +172,9 @@ def agnostic_sys_id_tracking_learner_(
 
     avg_time = total_time / num_iterations
     # TODO: Should I be running iLQR until convergence on true model to get best controller?
-    best_controller = tracking_controller(helicopter_model, helicopter_index, helicopter_env)
+    best_controller = tracking_controller(
+        trajectory, helicopter_model, helicopter_index, helicopter_env
+    )
     best_cost = evaluate_tracking_controller(
         best_controller,
         trajectory,

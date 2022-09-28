@@ -77,6 +77,8 @@ def construct_training_data(dataset, about_hover_state: bool):
 
 
 def fit_linearized_model(dataset, nominal_model):
+    if len(dataset) == 0:
+        return nominal_model
     states, controls, next_states = construct_training_data(dataset, about_hover_state=True)
 
     next_states = next_states - states @ (nominal_model.A.T) - controls @ (nominal_model.B.T)
@@ -128,7 +130,7 @@ def fit_parameterized_model(dataset, nominal_model):
     result = minimize(
         loss_fn_,
         nominal_model.params,
-        tol=0.01,
+        tol=0.001,
         options={"disp": True},
     )
     if result.success:

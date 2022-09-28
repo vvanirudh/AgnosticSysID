@@ -28,6 +28,7 @@ import ray
 from collections import deque
 import matplotlib.pyplot as plt
 import time
+import argparse
 
 
 def agnostic_sys_id_hover_learner_(
@@ -75,7 +76,14 @@ def agnostic_sys_id_hover_learner_(
     # Evaluate controller
     costs.append(
         evaluate_hover_controller(
-            controller, x_target, u_target, helicopter_model, helicopter_index, helicopter_env, H
+            controller,
+            x_target,
+            u_target,
+            helicopter_model,
+            helicopter_index,
+            helicopter_env,
+            H,
+            add_noise=add_noise,
         )
     )
     total_time = 0.0
@@ -219,4 +227,7 @@ def agnostic_sys_id_hover_experiment(add_noise=True):
 
 
 if __name__ == "__main__":
-    agnostic_sys_id_hover_experiment(add_noise=False)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-noise", action="store_true", default=False)
+    args = parser.parse_args()
+    agnostic_sys_id_hover_experiment(add_noise=(not args.no_noise))
