@@ -133,7 +133,7 @@ def agnostic_sys_id_hover_learner_(
         model = (
             fit_linearized_model(dataset, nominal_model)
             if linearized_model
-            else fit_parameterized_model(dataset, nominal_model)
+            else fit_parameterized_model(dataset, nominal_model, previous_model=model)
         )
 
         # Compute new optimal controller

@@ -6,9 +6,11 @@ from src.env.helicopter.helicopter_env import (
     step_batch_parameterized_model,
     step_parameterized_model,
 )
+from src.env.helicopter.linearized_helicopter_dynamics import linearized_heli_dynamics_2
 from src.planner.helicopter.helicopter_hover import hover_at_zero, hover_trims
 from src.env.helicopter.helicopter_model import (
     HelicopterIndex,
+    HelicopterModel,
     LinearizedHelicopterModel,
     ParameterizedHelicopterModel,
     dt,
@@ -22,6 +24,27 @@ if USE_RAY and not ray.is_initialized():
 def initial_linearized_model(H, time_varying=False):
     A = np.eye(13) if not time_varying else [np.eye(13) for _ in range(H)]
     B = np.eye(13, 4) if not time_varying else [np.eye(13, 4) for _ in range(H)]
+
+    return LinearizedHelicopterModel(A, B, time_varying=time_varying)
+
+
+def initial_linearized_model_about_hover(H, time_varying=False):
+    helicopter_model = HelicopterModel()
+    helicopter_env = HelicopterEnv()
+    helicopter_index = HelicopterIndex()
+    A, B = linearized_heli_dynamics_2(
+        hover_at_zero,
+        hover_at_zero,
+        hover_trims,
+        dt,
+        helicopter_model,
+        helicopter_index,
+        helicopter_env,
+    )
+
+    if time_varying:
+        A = [A.copy() for _ in range(H)]
+        B = [B.copy() for _ in range(H)]
 
     return LinearizedHelicopterModel(A, B, time_varying=time_varying)
 
@@ -110,7 +133,7 @@ def fit_linearized_time_varying_model(dataset, nominal_model):
     )
 
 
-def fit_parameterized_model(dataset, nominal_model):
+def fit_parameterized_model(dataset, nominal_model, previous_model=None):
     states, controls, next_states = construct_training_data(dataset, about_hover_state=False)
     helicopter_env = HelicopterEnv()
     helicopter_index = HelicopterIndex()
@@ -129,8 +152,8 @@ def fit_parameterized_model(dataset, nominal_model):
 
     result = minimize(
         loss_fn_,
-        nominal_model.params,
-        tol=0.001,
+        nominal_model.params if previous_model is None else previous_model.params,
+        tol=0.0001,
         options={"disp": True},
     )
     if result.success:

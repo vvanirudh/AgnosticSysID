@@ -64,3 +64,33 @@ def lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu):
         V_xx = (V_xx + V_xx.T) / 2.0
 
     return k, K
+
+
+def lqr_linearized_tv_2(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f, residuals):
+    H = len(A)
+
+    k = [np.zeros(B[0].shape[1]) for _ in range(H)]
+    K = [np.zeros_like(B[0]).T for _ in range(H)]
+
+    s, S = C_x_f, C_xx_f
+
+    for t in range(H - 1, -1, -1):
+        A_t, B_t = A[t], B[t]
+
+        c = residuals[t]
+
+        q, Q, r, R = C_x[t], C_xx[t], C_u[t], C_uu[t]
+
+        C = B_t.T @ S @ A_t
+        D = A_t.T @ S @ A_t + Q
+        E = B_t.T @ S @ B_t + R
+        d = A_t.T @ (s + S @ c) + q
+        e = B_t.T @ (s + S @ c) + r
+
+        K[t] = -np.linalg.lstsq(E, C, rcond=None)[0]
+        k[t] = -np.linalg.lstsq(E, e, rcond=None)[0]
+
+        S = D + C.T @ K[t]
+        s = d + C.T @ k[t]
+
+    return k, K

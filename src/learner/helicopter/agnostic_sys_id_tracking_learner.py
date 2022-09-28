@@ -20,6 +20,7 @@ from src.learner.helicopter.fit_model import (
     fit_linearized_time_varying_model,
     fit_parameterized_model,
     initial_linearized_model,
+    initial_linearized_model_about_hover,
     initial_parameterized_model,
 )
 from src.planner.helicopter.helicopter_track_trajectory import (
@@ -45,12 +46,12 @@ def agnostic_sys_id_tracking_learner_(
     H = trajectory.shape[0] - 1
     # NOTE: the paper uses the linearized model about hover state as the initial model
     nominal_model = (
-        initial_linearized_model(H, time_varying=True)
+        initial_linearized_model_about_hover(H, time_varying=True)
         if linearized_model
         else initial_parameterized_model()
     )
     model = (
-        initial_linearized_model(H, time_varying=True)
+        initial_linearized_model_about_hover(H, time_varying=True)
         if linearized_model
         else initial_parameterized_model()
     )
@@ -96,6 +97,7 @@ def agnostic_sys_id_tracking_learner_(
             controller, trajectory, helicopter_model, helicopter_index, helicopter_env
         )
     )
+    print(costs[-1])
     total_time = 0.0
     for n in range(num_iterations):
         print("Iteration", n)
@@ -107,7 +109,7 @@ def agnostic_sys_id_tracking_learner_(
             helicopter_index,
             helicopter_env,
             plot=False,
-            early_stop=True,
+            early_stop=False,
             add_noise=add_noise,
         )
 
@@ -167,6 +169,7 @@ def agnostic_sys_id_tracking_learner_(
                 add_noise=add_noise,
             )
         )
+        print(costs[-1])
 
         total_time += end - start
 
