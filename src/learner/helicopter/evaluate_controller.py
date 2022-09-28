@@ -151,8 +151,8 @@ def optimal_hover_ilqr_controller_for_parameterized_model(model, H, controller=N
         )
         # Rollout controller in the model to get trajectory
         alpha_found = False
-        alpha = 0.5
-        for _ in range(5):
+        alpha = 1.0
+        for _ in range(10):
             new_x_result, new_u_result, new_cost = test_hover_controller_(
                 new_controller,
                 model,
@@ -229,7 +229,7 @@ def optimal_tracking_ilqr_controller_for_parameterized_model(model, trajectory, 
         # Rollout controller in the model to get trajectory
         alpha_found = False
         alpha = 1.0
-        for _ in range(5):
+        for _ in range(10):
             new_x_result, new_u_result, new_cost = test_tracking_controller_(
                 new_controller,
                 trajectory,
