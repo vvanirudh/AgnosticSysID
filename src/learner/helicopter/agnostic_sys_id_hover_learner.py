@@ -176,7 +176,7 @@ def agnostic_sys_id_hover_learner_(
 def agnostic_sys_id_hover_learner(linearized_model: bool, pdl: bool):
     np.random.seed(0)
     model, index, env = setup_env()
-    agnostic_sys_id_hover_learner_(env, model, index, linearized_model, pdl)
+    return agnostic_sys_id_hover_learner_(env, model, index, linearized_model, pdl)
 
 
 def agnostic_sys_id_hover_experiment():
