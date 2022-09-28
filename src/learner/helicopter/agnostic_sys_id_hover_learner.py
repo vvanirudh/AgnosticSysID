@@ -7,8 +7,8 @@ from src.planner.helicopter.helicopter_hover import (
     test_hover_controller_,
 )
 from src.learner.helicopter.exploration_distribution import (
-    desired_trajectory_exploration_distribution,
-    expert_exploration_distribution,
+    desired_hover_trajectory_exploration_distribution,
+    expert_hover_exploration_distribution,
 )
 from src.learner.helicopter.fit_model import (
     fit_linearized_model,
@@ -17,10 +17,10 @@ from src.learner.helicopter.fit_model import (
     initial_parameterized_model,
 )
 from src.learner.helicopter.evaluate_controller import (
-    optimal_controller_for_linearized_model,
-    evaluate_controller,
-    optimal_controller_for_parameterized_model,
-    optimal_ilqr_controller_for_parameterized_model,
+    optimal_hover_controller_for_linearized_model,
+    evaluate_hover_controller,
+    optimal_hover_controller_for_parameterized_model,
+    optimal_hover_ilqr_controller_for_parameterized_model,
 )
 
 import numpy as np
@@ -39,6 +39,7 @@ def agnostic_sys_id_hover_learner_(
     num_iterations=100,
     num_samples_per_iteration=100,
     exploration_distribution_type="desired_trajectory",
+    plot=True,
 ):
     H = 100
     nominal_model = (
@@ -46,20 +47,22 @@ def agnostic_sys_id_hover_learner_(
     )
     model = initial_linearized_model(H) if linearized_model else initial_parameterized_model()
     controller = (
-        optimal_controller_for_linearized_model(model)
+        optimal_hover_controller_for_linearized_model(model)
         if linearized_model
-        else optimal_controller_for_parameterized_model(model)
+        else optimal_hover_controller_for_parameterized_model(model)
     )
     dataset = deque(maxlen=10000)
 
     if exploration_distribution_type == "desired_trajectory":
-        exploration_distribution = desired_trajectory_exploration_distribution(H, 0.0025, 0.0001)
+        exploration_distribution = desired_hover_trajectory_exploration_distribution(
+            H, 0.0025, 0.0001
+        )
     elif exploration_distribution_type == "expert_controller":
-        exploration_distribution = expert_exploration_distribution(
+        exploration_distribution = expert_hover_exploration_distribution(
             helicopter_env, helicopter_model, helicopter_index, H, 0.0, 0.0
         )
     elif exploration_distribution_type == "expert_controller_with_noise":
-        exploration_distribution = expert_exploration_distribution(
+        exploration_distribution = expert_hover_exploration_distribution(
             helicopter_env, helicopter_model, helicopter_index, H, 0.0, 0.0001
         )
     else:
@@ -70,13 +73,13 @@ def agnostic_sys_id_hover_learner_(
     u_target = np.array([hover_trims for _ in range(H)]).T
     # Evaluate controller
     costs.append(
-        evaluate_controller(
+        evaluate_hover_controller(
             controller, x_target, u_target, helicopter_model, helicopter_index, helicopter_env, H
         )
     )
     total_time = 0.0
     for n in range(num_iterations):
-        start = time.time()
+        print("Iteration", n)
         # Rollout controller in real world
         x_result, u_result, _ = test_hover_controller_(
             controller,
@@ -120,16 +123,17 @@ def agnostic_sys_id_hover_learner_(
         )
 
         # Compute new optimal controller
+        start = time.time()
         if linearized_model:
-            controller = optimal_controller_for_linearized_model(model)
+            controller = optimal_hover_controller_for_linearized_model(model)
         elif pdl:
-            controller = optimal_controller_for_parameterized_model(model)
+            controller = optimal_hover_controller_for_parameterized_model(model)
         else:
-            controller = optimal_ilqr_controller_for_parameterized_model(model, H)
-
+            controller = optimal_hover_ilqr_controller_for_parameterized_model(model, H)
+        end = time.time()
         # Evaluate controller
         costs.append(
-            evaluate_controller(
+            evaluate_hover_controller(
                 controller,
                 x_target,
                 u_target,
@@ -139,19 +143,51 @@ def agnostic_sys_id_hover_learner_(
                 H,
             )
         )
-        end = time.time()
+
         total_time += end - start
 
     avg_time = total_time / num_iterations
+    # TODO: Should I be running iLQR until convergence on true model to get best controller?
     best_controller = hover_controller(helicopter_model, helicopter_index, helicopter_env)
-    best_cost = evaluate_controller(
+    best_cost = evaluate_hover_controller(
         best_controller, x_target, u_target, helicopter_model, helicopter_index, helicopter_env, H
     )
 
-    plt.plot(np.arange(num_iterations + 1), costs, label="DAgger")
+    if plot:
+        plt.plot(np.arange(num_iterations + 1), costs, label="DAgger")
+        plt.plot(
+            np.arange(num_iterations + 1),
+            [best_cost for _ in range(num_iterations + 1)],
+            "--",
+            label="Opt",
+        )
+        plt.legend()
+        plt.xlabel("Number of iterations")
+        plt.ylabel("Cost")
+        plt.yscale("log")
+        plt.title("Average planning time per iteration: " + str(avg_time))
+        exp_name = "agnostic_sysid" if not pdl else "agnostic_sysid_pdl"
+        plt.savefig(exp_name + ".png")
+        # plt.show()
+
+    return controller, avg_time, costs, best_cost
+
+
+def agnostic_sys_id_hover_learner(linearized_model: bool, pdl: bool):
+    np.random.seed(0)
+    model, index, env = setup_env()
+    agnostic_sys_id_hover_learner_(env, model, index, linearized_model, pdl)
+
+
+def agnostic_sys_id_hover_experiment():
+    _, ag_time, ag_costs, best_cost = agnostic_sys_id_hover_learner(False, False)
+    _, pdl_time, pdl_costs, _ = agnostic_sys_id_hover_learner(False, True)
+    num_iterations = len(ag_costs)
+    plt.plot(np.arange(num_iterations), ag_costs, label="Agnostic SysID " + str(ag_time))
+    plt.plot(np.arange(num_iterations), pdl_costs, label="PDL " + str(pdl_time))
     plt.plot(
-        np.arange(num_iterations + 1),
-        [best_cost for _ in range(num_iterations + 1)],
+        np.arange(num_iterations),
+        [best_cost for _ in range(num_iterations)],
         "--",
         label="Opt",
     )
@@ -159,17 +195,4 @@ def agnostic_sys_id_hover_learner_(
     plt.xlabel("Number of iterations")
     plt.ylabel("Cost")
     plt.yscale("log")
-    plt.title("Average time per iteration: " + str(avg_time))
-    exp_name = "agnostic_sysid" if not pdl else "agnostic_sysid_pdl"
-    plt.savefig(exp_name + ".png")
-    # plt.show()
-
-    return controller
-
-
-def agnostic_sys_id_hover_learner(linearized_model: bool, pdl: bool):
-    np.random.seed(0)
-    # if not linearized_model:
-    #     ray.init()
-    model, index, env = setup_env()
-    agnostic_sys_id_hover_learner_(env, model, index, linearized_model, pdl)
+    plt.savefig("hover_exp.png")

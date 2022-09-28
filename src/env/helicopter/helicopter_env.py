@@ -49,8 +49,8 @@ class HelicopterEnv:
         Fxyz_minus_g = np.array(
             [
                 helicopter_model.Fx * uvw[0],
-                helicopter_model.Fy.dot(np.array([1, uvw[1]])),
-                helicopter_model.Fz.dot(np.array([1, uvw[2], u0[3]])),
+                helicopter_model.Fy @ np.array([1, uvw[1]]),
+                helicopter_model.Fz @ np.array([1, uvw[2], u0[3]]),
             ]
         )
 
@@ -65,9 +65,9 @@ class HelicopterEnv:
         ## Torques
         Txyz = np.array(
             [
-                helicopter_model.Tx.dot(np.array([1, x0[helicopter_index.pqr[0]], u0[0]])),
-                helicopter_model.Ty.dot(np.array([1, x0[helicopter_index.pqr[1]], u0[1]])),
-                helicopter_model.Tz.dot(np.array([1, x0[helicopter_index.pqr[2]], u0[2]])),
+                helicopter_model.Tx @ np.array([1, x0[helicopter_index.pqr[0]], u0[0]]),
+                helicopter_model.Ty @ np.array([1, x0[helicopter_index.pqr[1]], u0[1]]),
+                helicopter_model.Tz @ np.array([1, x0[helicopter_index.pqr[2]], u0[2]]),
             ]
         )
 
@@ -83,13 +83,13 @@ class LinearizedHelicopterEnv:
             raise Exception("Time varying env needs t to be specified")
 
         if self.time_varying:
-            return linearized_helicopter_model.A[t].dot(
+            return linearized_helicopter_model.A[t] @ (
                 np.append(x0, 1)
-            ) + linearized_helicopter_model.B[t].dot(u0)
+            ) + linearized_helicopter_model.B[t] @ u0
 
-        return linearized_helicopter_model.A.dot(
+        return linearized_helicopter_model.A @ (
             np.append(x0, 1)
-        ) + linearized_helicopter_model.B.dot(u0)
+        ) + linearized_helicopter_model.B @ u0
 
 
 def setup_env():

@@ -12,10 +12,9 @@ from src.env.helicopter.helicopter_model import (
     LinearizedHelicopterModel,
     ParameterizedHelicopterModel,
     dt,
-    HelicopterModel,
 )
 
-USE_RAY = False
+USE_RAY = True
 if USE_RAY and not ray.is_initialized():
     ray.init()
 
@@ -80,7 +79,7 @@ def construct_training_data(dataset, about_hover_state: bool):
 def fit_linearized_model(dataset, nominal_model):
     states, controls, next_states = construct_training_data(dataset, about_hover_state=True)
 
-    next_states = next_states - states.dot(nominal_model.A.T) - controls.dot(nominal_model.B.T)
+    next_states = next_states - states @ (nominal_model.A.T) - controls @ (nominal_model.B.T)
 
     states_controls, next_states_zeros = np.hstack([states, controls]), np.hstack(
         [next_states, np.zeros_like(controls)]
@@ -91,6 +90,21 @@ def fit_linearized_model(dataset, nominal_model):
     B_fit = solution[13:, :13].T
     return LinearizedHelicopterModel(
         nominal_model.A + A_fit, nominal_model.B + B_fit, time_varying=False
+    )
+
+
+def fit_linearized_time_varying_model(dataset, nominal_model):
+    linearized_models = [
+        fit_linearized_model(
+            dataset[t],
+            LinearizedHelicopterModel(nominal_model.A[t], nominal_model.B[t], time_varying=False),
+        )
+        for t in range(len(dataset))
+    ]
+    return LinearizedHelicopterModel(
+        [model.A for model in linearized_models],
+        [model.B for model in linearized_models],
+        time_varying=True,
     )
 
 

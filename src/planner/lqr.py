@@ -8,10 +8,10 @@ def lqr_lti(A, B, Q, R):
     Q_adjusted = 0.5 * Q
     R_adjusted = 0.5 * R
     P = np.ones_like(A)
-    K = solve(R_adjusted + B.T.dot(P.dot(B)), -B.T.dot(P.dot(A)))
+    K = solve(R_adjusted + B.T @ P @ B, -B.T @ P @ A)
     while True:
-        P = Q_adjusted + K.T.dot(R_adjusted.dot(K)) + (A + B.dot(K)).T.dot(P.dot(A + B.dot(K)))
-        Knew = solve(R_adjusted + B.T.dot(P.dot(B)), -B.T.dot(P.dot(A)))
+        P = Q_adjusted + K.T @ R_adjusted @ K + (A + B @ K).T @ P @ (A + B @ K)
+        Knew = solve(R_adjusted + B.T @ P @ B, -B.T @ P @ A)
         if np.linalg.norm(Knew - K) < 1e-6:
             break
         K = Knew.copy()
@@ -27,11 +27,11 @@ def lqr_ltv(A, B, Q, R, Qfinal):
 
     P[H] = Qfinal.copy()
     for t in range(H - 1, -1, -1):
-        K[t] = solve(R_adjusted + B[t].T.dot(P[t + 1].dot(B[t])), -B[t].T.dot(P[t + 1].dot(A[t])))
+        K[t] = solve(R_adjusted + B[t].T @ P[t + 1] @ B[t], -B[t].T @ P[t + 1] @ A[t])
         P[t] = (
             Q_adjusted
-            + K[t].T.dot(R_adjusted.dot(K[t]))
-            + (A[t] + B[t].dot(K[t])).T.dot(P[t + 1].dot(A[t] + B[t].dot(K[t])))
+            + K[t].T @ R_adjusted @ K[t]
+            + (A[t] + B[t] @ K[t]).T @ P[t + 1] @ (A[t] + B[t] @ K[t])
         )
 
     return K, P
