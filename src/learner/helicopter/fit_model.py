@@ -153,7 +153,7 @@ def fit_parameterized_model(dataset, nominal_model, previous_model=None):
     result = minimize(
         loss_fn_,
         nominal_model.params if previous_model is None else previous_model.params,
-        tol=0.001,
+        tol=0.0001,
         options={"disp": True},
     )
     if result.success:
