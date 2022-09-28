@@ -130,10 +130,7 @@ def optimal_hover_ilqr_controller_for_parameterized_model(model, H, controller=N
     for _ in range(1000):
         # Linearize dynamics and quadraticize cost around trajectory
         # TODO: Can parallelize the code below
-        A, B = [], []
-        C_x, C_u = [], []
-        C_xx, C_uu = [], []
-        residuals = []
+        A, B, C_x, C_u, C_xx, C_uu, residuals = [], [], [], [], [], [], []
         for t in range(H):
             A_t, B_t = linearized_heli_dynamics_2(
                 x_result[:, t],
@@ -157,7 +154,6 @@ def optimal_hover_ilqr_controller_for_parameterized_model(model, H, controller=N
                 - A_t @ np.append(x_result[:, t], 1)
                 - B_t @ u_result[:, t]
             )
-        # TODO: What about Qfinal?
         C_x_f = Qfinal @ (np.append(x_result[:, H] - hover_at_zero, 1))
         C_xx_f = Qfinal
         # Run LQR
@@ -218,7 +214,7 @@ def optimal_tracking_ilqr_controller_for_parameterized_model(model, trajectory, 
 
     for _ in range(100):
         # Linearize dynamics and quadraticize cost around trajectory
-        A, B, C_x, C_u, C_xx, C_uu = [], [], [], [], [], []
+        A, B, C_x, C_u, C_xx, C_uu, residuals = [], [], [], [], [], [], []
         for t in range(H):
             A_t, B_t = linearized_heli_dynamics_2(
                 x_result[:, t],
@@ -237,9 +233,16 @@ def optimal_tracking_ilqr_controller_for_parameterized_model(model, trajectory, 
             C_u.append(C_u_t)
             C_xx.append(Q)
             C_uu.append(R)
-        # TODO: What about Qfinal?
+            residuals.append(
+                np.append(x_result[:, t + 1], 1)
+                - A_t @ np.append(x_result[:, t], 1)
+                - B_t @ u_result[:, t]
+            )
+        C_x_f = Qfinal @ (np.append(x_result[:, H] - trajectory[H, :], 1))
+        C_xx_f = Qfinal
         # Run LQR
-        k, K = lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu)
+        # k, K = lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu)
+        k, K = lqr_linearized_tv_2(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f, residuals)
         new_controller = LinearControllerWithOffset(
             k, K, x_result.T, u_result.T, time_invariant=False
         )
