@@ -15,3 +15,34 @@ def quat_multiply(lq, rq):
     quat(4) = lq(4)*rq(4) - lq(1)*rq(1) - lq(2)*rq(2) - lq(3)*rq(3); """
 
     return quat
+
+
+def quat_multiply_batch(lq_batch, rq_batch):
+    quat_batch = np.zeros((lq_batch.shape[0], 4))
+
+    quat_batch[:, 0] = (
+        lq_batch[:, 3] * rq_batch[:, 0]
+        + lq_batch[:, 0] * rq_batch[:, 3]
+        + lq_batch[:, 1] * rq_batch[:, 2]
+        - lq_batch[:, 2] * rq_batch[:, 1]
+    )
+    quat_batch[:, 1] = (
+        lq_batch[:, 3] * rq_batch[:, 1]
+        - lq_batch[:, 0] * rq_batch[:, 2]
+        + lq_batch[:, 1] * rq_batch[:, 3]
+        + lq_batch[:, 2] * rq_batch[:, 0]
+    )
+    quat_batch[:, 2] = (
+        lq_batch[:, 3] * rq_batch[:, 2]
+        + lq_batch[:, 0] * rq_batch[:, 1]
+        - lq_batch[:, 1] * rq_batch[:, 0]
+        + lq_batch[:, 2] * rq_batch[:, 3]
+    )
+    quat_batch[:, 3] = (
+        lq_batch[:, 3] * rq_batch[:, 3]
+        - lq_batch[:, 0] * rq_batch[:, 0]
+        - lq_batch[:, 1] * rq_batch[:, 1]
+        - lq_batch[:, 2] * rq_batch[:, 2]
+    )
+
+    return quat_batch

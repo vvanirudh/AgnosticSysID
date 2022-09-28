@@ -14,7 +14,7 @@ from src.env.helicopter.helicopter_model import (
     dt,
 )
 
-USE_RAY = True
+USE_RAY = False
 if USE_RAY and not ray.is_initialized():
     ray.init()
 
@@ -118,11 +118,8 @@ def fit_parameterized_model(dataset, nominal_model):
             model = ParameterizedHelicopterModel(
                 *ParameterizedHelicopterModel.unpack_params(params)
             )
-            predicted_next_states = np.array(
-                [
-                    helicopter_env.step(states[i], controls[i], dt, model, helicopter_index)
-                    for i in range(states.shape[0])
-                ]
+            predicted_next_states = helicopter_env.step_batch(
+                states, controls, dt, model, helicopter_index
             )
         else:
             predicted_next_states = step_batch_parameterized_model(states, controls, dt, params)

@@ -165,9 +165,12 @@ def test_tracking_controller_(
 
         plt.subplot(3, 1, 2)
         axis_angle_idx = helicopter_index.axis_angle
-        plt.plot(np.arange(H + 1), x_result[axis_angle_idx[0], :], label="angle x")
-        plt.plot(np.arange(H + 1), x_result[axis_angle_idx[1], :], label="angle y")
-        plt.plot(np.arange(H + 1), x_result[axis_angle_idx[2], :], label="angle z")
+        plt.plot(np.arange(H + 1), x_result[axis_angle_idx[0], :], label="angle x", color="blue")
+        plt.plot(np.arange(H + 1), trajectory[:, axis_angle_idx[0]], "--", color="blue")
+        plt.plot(np.arange(H + 1), x_result[axis_angle_idx[1], :], label="angle y", color="red")
+        plt.plot(np.arange(H + 1), trajectory[:, axis_angle_idx[1]], "--", color="red")
+        plt.plot(np.arange(H + 1), x_result[axis_angle_idx[2], :], label="angle z", color="green")
+        plt.plot(np.arange(H + 1), trajectory[:, axis_angle_idx[2]], "--", color="green")
         plt.legend()
 
         plt.subplot(3, 1, 3)
