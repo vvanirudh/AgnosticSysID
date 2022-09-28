@@ -40,6 +40,7 @@ def agnostic_sys_id_hover_learner_(
     num_samples_per_iteration=100,
     exploration_distribution_type="desired_trajectory",
     plot=True,
+    add_noise=True,
 ):
     H = 100
     nominal_model = (
@@ -59,11 +60,11 @@ def agnostic_sys_id_hover_learner_(
         )
     elif exploration_distribution_type == "expert_controller":
         exploration_distribution = expert_hover_exploration_distribution(
-            helicopter_env, helicopter_model, helicopter_index, H, 0.0, 0.0
+            helicopter_env, helicopter_model, helicopter_index, H, 0.0, 0.0, add_noise=add_noise
         )
     elif exploration_distribution_type == "expert_controller_with_noise":
         exploration_distribution = expert_hover_exploration_distribution(
-            helicopter_env, helicopter_model, helicopter_index, H, 0.0, 0.0001
+            helicopter_env, helicopter_model, helicopter_index, H, 0.0, 0.0001, add_noise=add_noise
         )
     else:
         raise NotImplementedError("Unknown exploration distribution type")
@@ -89,7 +90,7 @@ def agnostic_sys_id_hover_learner_(
             H,
             plot=False,
             early_stop=True,
-            add_noise=True,
+            add_noise=add_noise,
         )
 
         for k in range(num_samples_per_iteration):
@@ -103,7 +104,12 @@ def agnostic_sys_id_hover_learner_(
                 state, control = exploration_distribution.sample(t)
                 # Get next state from env
                 next_state = helicopter_env.step(
-                    state, control, dt, helicopter_model, helicopter_index, noise=np.random.randn(6)
+                    state,
+                    control,
+                    dt,
+                    helicopter_model,
+                    helicopter_index,
+                    noise=np.random.randn(6) if add_noise else np.zeros(6),
                 )
             else:
                 ## Sample from current policy
@@ -141,6 +147,7 @@ def agnostic_sys_id_hover_learner_(
                 helicopter_index,
                 helicopter_env,
                 H,
+                add_noise=add_noise,
             )
         )
 
@@ -150,7 +157,14 @@ def agnostic_sys_id_hover_learner_(
     # TODO: Should I be running iLQR until convergence on true model to get best controller?
     best_controller = hover_controller(helicopter_model, helicopter_index, helicopter_env)
     best_cost = evaluate_hover_controller(
-        best_controller, x_target, u_target, helicopter_model, helicopter_index, helicopter_env, H
+        best_controller,
+        x_target,
+        u_target,
+        helicopter_model,
+        helicopter_index,
+        helicopter_env,
+        H,
+        add_noise=add_noise,
     )
 
     if plot:
@@ -173,15 +187,21 @@ def agnostic_sys_id_hover_learner_(
     return controller, avg_time, costs, best_cost
 
 
-def agnostic_sys_id_hover_learner(linearized_model: bool, pdl: bool):
+def agnostic_sys_id_hover_learner(linearized_model: bool, pdl: bool, plot=True, add_noise=True):
     np.random.seed(0)
     model, index, env = setup_env()
-    return agnostic_sys_id_hover_learner_(env, model, index, linearized_model, pdl)
+    return agnostic_sys_id_hover_learner_(
+        env, model, index, linearized_model, pdl, plot=plot, add_noise=add_noise
+    )
 
 
-def agnostic_sys_id_hover_experiment():
-    _, ag_time, ag_costs, best_cost = agnostic_sys_id_hover_learner(False, False)
-    _, pdl_time, pdl_costs, _ = agnostic_sys_id_hover_learner(False, True)
+def agnostic_sys_id_hover_experiment(add_noise=True):
+    _, ag_time, ag_costs, best_cost = agnostic_sys_id_hover_learner(
+        False, False, plot=False, add_noise=add_noise
+    )
+    _, pdl_time, pdl_costs, _ = agnostic_sys_id_hover_learner(
+        False, True, plot=False, add_noise=add_noise
+    )
     num_iterations = len(ag_costs)
     plt.plot(np.arange(num_iterations), ag_costs, label="Agnostic SysID " + str(ag_time))
     plt.plot(np.arange(num_iterations), pdl_costs, label="PDL " + str(pdl_time))
@@ -199,4 +219,4 @@ def agnostic_sys_id_hover_experiment():
 
 
 if __name__ == "__main__":
-    agnostic_sys_id_hover_experiment()
+    agnostic_sys_id_hover_experiment(add_noise=False)

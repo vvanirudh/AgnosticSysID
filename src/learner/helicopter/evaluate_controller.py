@@ -28,7 +28,14 @@ from src.planner.helicopter.controller import (
 
 
 def evaluate_hover_controller(
-    controller, x_target, u_target, helicopter_model, helicopter_index, helicopter_env, H
+    controller,
+    x_target,
+    u_target,
+    helicopter_model,
+    helicopter_index,
+    helicopter_env,
+    H,
+    add_noise=True,
 ):
     _, _, cost = test_hover_controller_(
         controller,
@@ -38,7 +45,7 @@ def evaluate_hover_controller(
         H,
         plot=False,
         early_stop=False,
-        add_noise=True,
+        add_noise=add_noise,
     )
     if isnan(cost):
         return 1e5
@@ -46,7 +53,7 @@ def evaluate_hover_controller(
 
 
 def evaluate_tracking_controller(
-    controller, trajectory, helicopter_model, helicopter_index, helicopter_env
+    controller, trajectory, helicopter_model, helicopter_index, helicopter_env, add_noise=True
 ):
     _, _, cost = test_tracking_controller_(
         controller,
@@ -56,7 +63,7 @@ def evaluate_tracking_controller(
         helicopter_env,
         plot=False,
         early_stop=False,
-        add_noise=True,
+        add_noise=add_noise,
     )
     if isnan(cost):
         return 1e5

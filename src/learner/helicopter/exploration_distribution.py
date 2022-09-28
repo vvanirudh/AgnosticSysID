@@ -45,7 +45,13 @@ def desired_tracking_trajectory_exploration_distribution(trajectory, noise_state
 
 
 def expert_hover_exploration_distribution(
-    helicopter_env, helicopter_model, helicopter_index, H, noise_state, noise_control
+    helicopter_env,
+    helicopter_model,
+    helicopter_index,
+    H,
+    noise_state,
+    noise_control,
+    add_noise=True,
 ):
     expert_controller = hover_controller(helicopter_model, helicopter_index, helicopter_env)
     exploration_distribution = ExplorationDistribution(H)
@@ -55,14 +61,25 @@ def expert_hover_exploration_distribution(
         exploration_distribution.update(state, control, noise_state, noise_control, t)
         # TODO: Should I be adding noise when rolling out expert controller?
         state = helicopter_env.step(
-            state, control, dt, helicopter_model, helicopter_index, noise=0.1 * np.random.randn(6)
+            state,
+            control,
+            dt,
+            helicopter_model,
+            helicopter_index,
+            noise=np.random.randn(6) if add_noise else np.zeros(6),
         )
 
     return exploration_distribution
 
 
 def expert_tracking_exploration_distribution(
-    trajectory, helicopter_env, helicopter_model, helicopter_index, noise_state, noise_control
+    trajectory,
+    helicopter_env,
+    helicopter_model,
+    helicopter_index,
+    noise_state,
+    noise_control,
+    add_noise=True,
 ):
     expert_controller = tracking_controller(
         trajectory, helicopter_model, helicopter_index, helicopter_env
@@ -74,7 +91,12 @@ def expert_tracking_exploration_distribution(
         control = expert_controller.act(state, t)
         exploration_distribution.update(state, control, noise_state, noise_control, t)
         state = helicopter_env.step(
-            state, control, dt, helicopter_model, helicopter_index, noise=np.random.randn(6)
+            state,
+            control,
+            dt,
+            helicopter_model,
+            helicopter_index,
+            noise=0.1 * np.random.randn(6) if add_noise else np.zeros(6),
         )
 
     return exploration_distribution
