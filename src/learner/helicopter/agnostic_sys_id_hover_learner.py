@@ -196,3 +196,7 @@ def agnostic_sys_id_hover_experiment():
     plt.ylabel("Cost")
     plt.yscale("log")
     plt.savefig("hover_exp.png")
+
+
+if __name__ == "__main__":
+    agnostic_sys_id_hover_experiment()
