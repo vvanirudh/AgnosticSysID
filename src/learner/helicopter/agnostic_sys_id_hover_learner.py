@@ -43,7 +43,7 @@ def agnostic_sys_id_hover_learner_(
     plot=True,
     add_noise=True,
 ):
-    H = 300
+    H = 200
     nominal_model = (
         initial_linearized_model(H) if linearized_model else initial_parameterized_model()
     )

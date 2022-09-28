@@ -1,17 +1,23 @@
 import numpy as np
 
+LARGE_VALUE = 1e10
+
 
 def cost_state(x_result, x_target, Q):
-    return 0.5 * np.append(x_result - x_target, 1).T @ (Q @ (np.append(x_result - x_target, 1)))
+    return min(
+        0.5 * np.append(x_result - x_target, 1).T @ (Q @ (np.append(x_result - x_target, 1))),
+        LARGE_VALUE,
+    )
 
 
 def cost_control(u_result, u_target, R):
-    return 0.5 * (u_result - u_target).T @ (R @ (u_result - u_target))
+    return min(0.5 * (u_result - u_target).T @ (R @ (u_result - u_target)), LARGE_VALUE)
 
 
 def cost_final(x_result, x_target, Qfinal):
-    return (
-        0.5 * np.append(x_result - x_target, 1).T @ (Qfinal @ (np.append(x_result - x_target, 1)))
+    return min(
+        0.5 * np.append(x_result - x_target, 1).T @ (Qfinal @ (np.append(x_result - x_target, 1))),
+        LARGE_VALUE,
     )
 
 
