@@ -1,6 +1,7 @@
 from src.env.helicopter.helicopter_env import setup_env
 from src.env.helicopter.helicopter_model import dt, HelicopterIndex
 from src.env.helicopter.linearized_helicopter_dynamics import linearized_heli_dynamics_2
+from src.learner.helicopter.noise import get_tracking_noise
 from src.planner.helicopter.cost import cost_control, cost_final, cost_state
 from src.planner.helicopter.helicopter_hover import Q, R, Qfinal
 from src.planner.lqr import lqr_ltv
@@ -139,7 +140,7 @@ def test_tracking_controller_(
             return x_result[:, : t + 1], u_result[:, :t], cost
 
         # Simulate
-        noise_F_T = 0.1 * np.random.randn(6) if add_noise else np.zeros(6)
+        noise_F_T = get_tracking_noise() if add_noise else np.zeros(6)
         x_result[:, t + 1] = helicopter_env.step(
             x_result[:, t], u_result[:, t], dt, helicopter_model, helicopter_index, noise_F_T
         )

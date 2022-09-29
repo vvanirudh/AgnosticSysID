@@ -24,6 +24,7 @@ from src.learner.helicopter.fit_model import (
     initial_linearized_model_about_hover,
     initial_parameterized_model,
 )
+from src.learner.helicopter.noise import get_tracking_noise
 from src.planner.helicopter.helicopter_track_trajectory import (
     desired_trajectory,
     test_tracking_controller_,
@@ -39,7 +40,7 @@ def agnostic_sys_id_tracking_learner_(
     pdl: bool,
     num_iterations=200,
     num_samples_per_iteration=500,
-    exploration_distribution_type="desired_trajectory",
+    exploration_distribution_type="expert_controller",
     plot=True,
     add_noise=True,
 ):
@@ -56,12 +57,11 @@ def agnostic_sys_id_tracking_learner_(
         if linearized_model
         else initial_parameterized_model()
     )
-    # controller = (
-    #     optimal_tracking_controller_for_linearized_model(model, trajectory)
-    #     if linearized_model
-    #     else optimal_tracking_controller_for_parameterized_model(model, trajectory)
-    # )
-    controller = random_hover_controller(model)
+    controller = (
+        optimal_tracking_controller_for_linearized_model(model, trajectory)
+        if linearized_model
+        else optimal_tracking_controller_for_parameterized_model(model, trajectory)
+    )
     dataset = [deque(maxlen=10000) for _ in range(H)]
 
     if exploration_distribution_type == "desired_trajectory":
@@ -131,7 +131,7 @@ def agnostic_sys_id_tracking_learner_(
                     dt,
                     helicopter_model,
                     helicopter_index,
-                    noise=0.1 * np.random.randn(6) if add_noise else np.zeros(6),
+                    noise=get_tracking_noise() if add_noise else np.zeros(6),
                 )
             else:
                 ## Sample from current policy
@@ -210,7 +210,7 @@ def agnostic_sys_id_tracking_learner_(
 def agnostic_sys_id_tracking_learner(linearized_model: bool, pdl: bool):
     np.random.seed(0)
     model, index, env = setup_env()
-    agnostic_sys_id_tracking_learner_(env, model, index, linearized_model, pdl, add_noise=False)
+    agnostic_sys_id_tracking_learner_(env, model, index, linearized_model, pdl)
 
 
 if __name__ == "__main__":

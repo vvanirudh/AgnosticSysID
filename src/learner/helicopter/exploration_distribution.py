@@ -3,6 +3,7 @@ from src.learner.helicopter.evaluate_controller import (
     optimal_hover_ilqr_controller_for_parameterized_model,
     optimal_tracking_ilqr_controller_for_parameterized_model,
 )
+from src.learner.helicopter.noise import get_hover_noise, get_tracking_noise
 from src.planner.helicopter.helicopter_hover import hover_at_zero, hover_trims, hover_controller
 from src.env.helicopter.helicopter_model import dt
 from src.planner.helicopter.helicopter_track_trajectory import tracking_controller
@@ -70,7 +71,7 @@ def expert_hover_exploration_distribution(
             dt,
             helicopter_model,
             helicopter_index,
-            noise=np.random.randn(6) if add_noise else np.zeros(6),
+            noise=get_hover_noise() if add_noise else np.zeros(6),
         )
 
     return exploration_distribution
@@ -100,7 +101,7 @@ def expert_tracking_exploration_distribution(
             dt,
             helicopter_model,
             helicopter_index,
-            noise=0.1 * np.random.randn(6) if add_noise else np.zeros(6),
+            noise=get_tracking_noise() if add_noise else np.zeros(6),
         )
 
     return exploration_distribution

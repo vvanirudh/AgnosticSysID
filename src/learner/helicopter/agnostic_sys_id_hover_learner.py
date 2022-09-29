@@ -1,5 +1,6 @@
 from src.env.helicopter.helicopter_model import dt
 from src.env.helicopter.helicopter_env import setup_env
+from src.learner.helicopter.noise import get_hover_noise
 from src.planner.helicopter.helicopter_hover import (
     hover_at_zero,
     hover_controller,
@@ -123,7 +124,7 @@ def agnostic_sys_id_hover_learner_(
                     dt,
                     helicopter_model,
                     helicopter_index,
-                    noise=np.random.randn(6) if add_noise else np.zeros(6),
+                    noise=get_hover_noise() if add_noise else np.zeros(6),
                 )
             else:
                 ## Sample from current policy
