@@ -55,16 +55,20 @@ def initial_parameterized_model():
     Iyy = np.random.rand()
     Izz = np.random.rand()
 
-    Tx = np.array([0.1, -3, 14]) * Ixx
-    # Tx = np.array([np.random.rand(), -6 * np.random.rand(), 28 * np.random.rand()]) * Ixx
-    Ty = np.array([-0.1, -4, -9]) * Iyy
-    # Ty = np.array([-np.random.rand(), -8 * np.random.rand(), -18 * np.random.rand()]) * Iyy
-    Tz = np.array([0.1, -3, 14]) * Izz
-    # Tz = np.array([np.random.rand(), -6 * np.random.rand(), 28 * np.random.rand()]) * Izz
+    # Tx = np.array([0.1, -3, 14]) * Ixx
+    Tx = np.array([np.random.rand(), -6 * np.random.rand(), 28 * np.random.rand()]) * Ixx
+    # Ty = np.array([-0.1, -4, -9]) * Iyy
+    Ty = np.array([-np.random.rand(), -8 * np.random.rand(), -18 * np.random.rand()]) * Iyy
+    # Tz = np.array([0.1, -3, 14]) * Izz
+    Tz = np.array([np.random.rand(), -6 * np.random.rand(), 28 * np.random.rand()]) * Izz
 
-    Fx = -0.1 * m
-    Fy = np.array([0, -1]) * m
-    Fz = np.array([-10, -1, -25]) * m
+    # Fx = -0.1 * m
+    Fx = -np.random.rand() * m
+    # Fy = np.array([0, -1]) * m
+    Fy = np.array([np.random.rand(), -2 * np.random.rand()]) * m
+    # Fz = np.array([-10, -1, -25]) * m
+    Fz = np.array([-20 * np.random.rand(), -2 * np.random.rand(), -50 * np.random.rand()]) * m
+
     # m = 5  # kg
     # Ixx = 0.3
     # Iyy = 0.3
