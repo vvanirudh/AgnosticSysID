@@ -87,10 +87,45 @@ def lqr_linearized_tv_2(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f, residuals):
         d = A_t.T @ (s + S @ c) + q
         e = B_t.T @ (s + S @ c) + r
 
-        K[t] = -np.linalg.lstsq(E, C, rcond=None)[0]
-        k[t] = -np.linalg.lstsq(E, e, rcond=None)[0]
+        # K[t] = -np.linalg.lstsq(E, C, rcond=None)[0]
+        # k[t] = -np.linalg.lstsq(E, e, rcond=None)[0]
+        K[t] = solve(-E, C)
+        k[t] = solve(-E, e)
 
         S = D + C.T @ K[t]
         s = d + C.T @ k[t]
+
+    return k, K
+
+
+def lqr_linearized_tv_3(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f):
+    H = len(A)
+
+    P = [np.zeros_like(A[0]) for _ in range(H + 1)]
+    p = [np.zeros(A[0].shape[0]) for _ in range(H + 1)]
+    k = [np.zeros(B[0].shape[1]) for _ in range(H)]
+    K = [np.zeros_like(B[0]).T for _ in range(H)]
+
+    P[H], p[H] = C_xx_f, C_x_f
+
+    for t in range(H - 1, -1, -1):
+        A_t, B_t = A[t], B[t]
+        C_xx_t, C_x_t, C_uu_t, C_u_t = C_xx[t], C_x[t], C_uu[t], C_u[t]
+
+        # Q expansion
+        gx = C_x_t + A_t.T @ p[t + 1]
+        gu = C_u_t + B_t.T @ p[t + 1]
+
+        Gxx = C_xx_t + A_t.T @ P[t + 1] @ A_t
+        Guu = C_uu_t + B_t.T @ P[t + 1] @ B_t
+        Gux = B_t.T @ P[t + 1] @ A_t
+
+        # calculate gains
+        k[t] = solve(-Guu, gu)
+        K[t] = solve(-Guu, Gux)
+
+        # Cost-to-go recurrence
+        p[t] = gx + K[t].T @ gu + K[t].T @ Guu @ k[t] + Gux.T @ k[t]
+        P[t] = Gxx + K[t].T @ Guu @ K[t] + Gux.T @ K[t] + K[t].T @ Gux
 
     return k, K

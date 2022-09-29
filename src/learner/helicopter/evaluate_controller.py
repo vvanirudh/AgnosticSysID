@@ -19,7 +19,13 @@ from src.planner.helicopter.helicopter_track_trajectory import (
     test_tracking_controller_,
     tracking_controller,
 )
-from src.planner.lqr import lqr_linearized_tv, lqr_linearized_tv_2, lqr_lti, lqr_ltv
+from src.planner.lqr import (
+    lqr_linearized_tv,
+    lqr_linearized_tv_2,
+    lqr_linearized_tv_3,
+    lqr_lti,
+    lqr_ltv,
+)
 from src.planner.helicopter.controller import (
     LinearController,
     LinearControllerWithOffset,
@@ -159,6 +165,7 @@ def optimal_hover_ilqr_controller_for_parameterized_model(model, H, controller=N
         # Run LQR
         # k, K = lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu)
         k, K = lqr_linearized_tv_2(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f, residuals)
+        # k, K = lqr_linearized_tv_3(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f)
         new_controller = LinearControllerWithOffset(
             k, K, x_result.T, u_result.T, time_invariant=False
         )

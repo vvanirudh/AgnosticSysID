@@ -31,6 +31,16 @@ import time
 import argparse
 
 
+def get_optimal_hover_controller(model, H, linearized_model: bool, pdl: bool):
+    if linearized_model:
+        controller = optimal_hover_controller_for_linearized_model(model)
+    elif pdl:
+        controller = optimal_hover_controller_for_parameterized_model(model)
+    else:
+        controller = optimal_hover_ilqr_controller_for_parameterized_model(model, H)
+    return controller
+
+
 def agnostic_sys_id_hover_learner_(
     helicopter_env,
     helicopter_model,
@@ -43,16 +53,12 @@ def agnostic_sys_id_hover_learner_(
     plot=True,
     add_noise=True,
 ):
-    H = 100
+    H = 400
     nominal_model = (
         initial_linearized_model(H) if linearized_model else initial_parameterized_model()
     )
     model = initial_linearized_model(H) if linearized_model else initial_parameterized_model()
-    controller = (
-        optimal_hover_controller_for_linearized_model(model)
-        if linearized_model
-        else optimal_hover_controller_for_parameterized_model(model)
-    )
+    controller = get_optimal_hover_controller(model, H, linearized_model, pdl)
     dataset = deque(maxlen=10000)
 
     if exploration_distribution_type == "desired_trajectory":
@@ -138,12 +144,7 @@ def agnostic_sys_id_hover_learner_(
 
         # Compute new optimal controller
         start = time.time()
-        if linearized_model:
-            controller = optimal_hover_controller_for_linearized_model(model)
-        elif pdl:
-            controller = optimal_hover_controller_for_parameterized_model(model)
-        else:
-            controller = optimal_hover_ilqr_controller_for_parameterized_model(model, H)
+        controller = get_optimal_hover_controller(model, H, linearized_model, pdl)
         end = time.time()
         # Evaluate controller
         costs.append(
@@ -162,8 +163,7 @@ def agnostic_sys_id_hover_learner_(
         total_time += end - start
 
     avg_time = total_time / num_iterations
-    # TODO: Should I be running iLQR until convergence on true model to get best controller?
-    best_controller = hover_controller(helicopter_model, helicopter_index, helicopter_env)
+    best_controller = optimal_hover_ilqr_controller_for_parameterized_model(helicopter_model, H)
     best_cost = evaluate_hover_controller(
         best_controller,
         x_target,
