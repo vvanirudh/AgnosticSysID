@@ -36,8 +36,8 @@ def agnostic_sys_id_tracking_learner_(
     helicopter_index: HelicopterIndex,
     linearized_model: bool,
     pdl: bool,
-    num_iterations=500,
-    num_samples_per_iteration=1000,
+    num_iterations=100,
+    num_samples_per_iteration=500,
     exploration_distribution_type="expert_controller",
     plot=True,
     add_noise=True,
@@ -208,7 +208,7 @@ def agnostic_sys_id_tracking_learner_(
 def agnostic_sys_id_tracking_learner(linearized_model: bool, pdl: bool):
     np.random.seed(0)
     model, index, env = setup_env()
-    agnostic_sys_id_tracking_learner_(env, model, index, linearized_model, pdl, add_noise=False)
+    agnostic_sys_id_tracking_learner_(env, model, index, linearized_model, pdl)
 
 
 if __name__ == "__main__":
