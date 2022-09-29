@@ -86,16 +86,19 @@ def initial_parameterized_model():
     # return HelicopterModel()
 
 
-def construct_training_data(dataset, about_hover_state: bool):
+def construct_training_data(
+    dataset, nominal_state=None, nominal_control=None, nominal_next_state=None
+):
     states, controls, next_states = tuple(zip(*dataset))
     states, controls, next_states = np.array(states), np.array(controls), np.array(next_states)
-    if about_hover_state:
-        hover_at_zero_ = hover_at_zero.reshape(1, -1)
-        hover_trims_ = hover_trims.reshape(1, -1)
+    if nominal_state is not None and nominal_control is not None and nominal_next_state is not None:
+        nominal_state_ = nominal_state.reshape(1, -1)
+        nominal_control_ = nominal_control.reshape(1, -1)
+        nominal_next_state_ = nominal_next_state.reshape(1, -1)
         states, controls, next_states = (
-            states - hover_at_zero_,
-            controls - hover_trims_,
-            next_states - hover_at_zero_,
+            states - nominal_state_,
+            controls - nominal_control_,
+            next_states - nominal_next_state_,
         )
         states, next_states = np.hstack([states, np.ones((states.shape[0], 1))]), np.hstack(
             [next_states, np.ones((next_states.shape[0], 1))]
@@ -103,10 +106,17 @@ def construct_training_data(dataset, about_hover_state: bool):
     return states, controls, next_states
 
 
-def fit_linearized_model(dataset, nominal_model):
+def fit_linearized_model(
+    dataset, nominal_model, nominal_state=None, nominal_control=None, nominal_next_state=None
+):
     if len(dataset) == 0:
         return nominal_model
-    states, controls, next_states = construct_training_data(dataset, about_hover_state=True)
+    states, controls, next_states = construct_training_data(
+        dataset,
+        nominal_state=nominal_state,
+        nominal_control=nominal_control,
+        nominal_next_state=nominal_next_state,
+    )
 
     next_states = next_states - states @ (nominal_model.A.T) - controls @ (nominal_model.B.T)
 
@@ -122,11 +132,14 @@ def fit_linearized_model(dataset, nominal_model):
     )
 
 
-def fit_linearized_time_varying_model(dataset, nominal_model):
+def fit_linearized_time_varying_model(dataset, nominal_model, nominal_states):
     linearized_models = [
         fit_linearized_model(
             dataset[t],
             LinearizedHelicopterModel(nominal_model.A[t], nominal_model.B[t], time_varying=False),
+            nominal_state=nominal_states[t],
+            nominal_control=hover_trims,
+            nominal_next_state=nominal_states[t + 1],
         )
         for t in range(len(dataset))
     ]
@@ -138,7 +151,7 @@ def fit_linearized_time_varying_model(dataset, nominal_model):
 
 
 def fit_parameterized_model(dataset, nominal_model, previous_model=None):
-    states, controls, next_states = construct_training_data(dataset, about_hover_state=False)
+    states, controls, next_states = construct_training_data(dataset)
     helicopter_env = HelicopterEnv()
     helicopter_index = HelicopterIndex()
     # TODO: Maybe we can learn residual on the nominal model?

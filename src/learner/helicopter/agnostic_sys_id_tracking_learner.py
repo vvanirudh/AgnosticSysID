@@ -143,7 +143,7 @@ def agnostic_sys_id_tracking_learner_(
 
         # Fit new model
         model = (
-            fit_linearized_time_varying_model(dataset, nominal_model)
+            fit_linearized_time_varying_model(dataset, nominal_model, trajectory)
             if linearized_model
             else fit_parameterized_model(dataset, nominal_model)
         )

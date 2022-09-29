@@ -137,7 +137,13 @@ def agnostic_sys_id_hover_learner_(
 
         # Fit new model
         model = (
-            fit_linearized_model(dataset, nominal_model)
+            fit_linearized_model(
+                dataset,
+                nominal_model,
+                nominal_state=hover_at_zero,
+                nominal_control=hover_trims,
+                nominal_next_state=hover_at_zero,
+            )
             if linearized_model
             else fit_parameterized_model(dataset, nominal_model, previous_model=model)
         )
