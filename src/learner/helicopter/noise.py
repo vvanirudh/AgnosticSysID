@@ -6,4 +6,4 @@ def get_hover_noise():
 
 
 def get_tracking_noise():
-    return 0.01 * np.random.randn(6)
+    return 0.1 * np.random.randn(6)
