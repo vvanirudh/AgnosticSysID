@@ -208,7 +208,7 @@ def agnostic_sys_id_tracking_learner_(
 def agnostic_sys_id_tracking_learner(linearized_model: bool, pdl: bool):
     np.random.seed(0)
     model, index, env = setup_env()
-    agnostic_sys_id_tracking_learner_(env, model, index, linearized_model, pdl)
+    agnostic_sys_id_tracking_learner_(env, model, index, linearized_model, pdl, add_noise=False)
 
 
 if __name__ == "__main__":
