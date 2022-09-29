@@ -80,8 +80,8 @@ def agnostic_sys_id_tracking_learner_(
         exploration_distribution = expert_tracking_exploration_distribution(
             trajectory,
             helicopter_env,
-            helicopter_index,
             helicopter_model,
+            helicopter_index,
             0.0,
             0.0001,
             add_noise=add_noise,
