@@ -37,7 +37,7 @@ def agnostic_sys_id_tracking_learner_(
     linearized_model: bool,
     pdl: bool,
     num_iterations=200,
-    num_samples_per_iteration=500,
+    num_samples_per_iteration=1000,
     exploration_distribution_type="expert_controller",
     plot=True,
     add_noise=True,
