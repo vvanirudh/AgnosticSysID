@@ -27,6 +27,7 @@ from src.learner.helicopter.fit_model import (
 from src.learner.helicopter.noise import get_tracking_noise
 from src.planner.helicopter.helicopter_track_trajectory import (
     desired_trajectory,
+    nose_in_funnel_trajectory,
     test_tracking_controller_,
     tracking_controller,
 )
@@ -44,7 +45,8 @@ def agnostic_sys_id_tracking_learner_(
     plot=True,
     add_noise=True,
 ):
-    trajectory = desired_trajectory(helicopter_index)
+    # trajectory = desired_trajectory(helicopter_index)
+    trajectory = nose_in_funnel_trajectory(helicopter_index)
     H = trajectory.shape[0] - 1
     # NOTE: the paper uses the linearized model about hover state as the initial model
     nominal_model = (
