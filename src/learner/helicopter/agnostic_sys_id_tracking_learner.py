@@ -10,6 +10,7 @@ from src.learner.helicopter.evaluate_controller import (
     optimal_tracking_controller_for_linearized_model,
     optimal_tracking_controller_for_parameterized_model,
     optimal_tracking_ilqr_controller_for_parameterized_model,
+    random_hover_controller,
 )
 from src.learner.helicopter.exploration_distribution import (
     desired_tracking_trajectory_exploration_distribution,
@@ -55,11 +56,12 @@ def agnostic_sys_id_tracking_learner_(
         if linearized_model
         else initial_parameterized_model()
     )
-    controller = (
-        optimal_tracking_controller_for_linearized_model(model, trajectory)
-        if linearized_model
-        else optimal_tracking_controller_for_parameterized_model(model, trajectory)
-    )
+    # controller = (
+    #     optimal_tracking_controller_for_linearized_model(model, trajectory)
+    #     if linearized_model
+    #     else optimal_tracking_controller_for_parameterized_model(model, trajectory)
+    # )
+    controller = random_hover_controller(model)
     dataset = [deque(maxlen=10000) for _ in range(H)]
 
     if exploration_distribution_type == "desired_trajectory":
