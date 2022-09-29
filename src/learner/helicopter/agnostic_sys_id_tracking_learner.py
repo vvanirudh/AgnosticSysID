@@ -38,7 +38,7 @@ def agnostic_sys_id_tracking_learner_(
     pdl: bool,
     num_iterations=200,
     num_samples_per_iteration=500,
-    exploration_distribution_type="desired_trajectory",
+    exploration_distribution_type="expert_controller",
     plot=True,
     add_noise=True,
 ):
@@ -109,7 +109,7 @@ def agnostic_sys_id_tracking_learner_(
             helicopter_index,
             helicopter_env,
             plot=False,
-            early_stop=False,
+            early_stop=True,
             add_noise=add_noise,
         )
 
@@ -174,9 +174,8 @@ def agnostic_sys_id_tracking_learner_(
         total_time += end - start
 
     avg_time = total_time / num_iterations
-    # TODO: Should I be running iLQR until convergence on true model to get best controller?
-    best_controller = tracking_controller(
-        trajectory, helicopter_model, helicopter_index, helicopter_env
+    best_controller = optimal_tracking_ilqr_controller_for_parameterized_model(
+        helicopter_model, trajectory
     )
     best_cost = evaluate_tracking_controller(
         best_controller,
