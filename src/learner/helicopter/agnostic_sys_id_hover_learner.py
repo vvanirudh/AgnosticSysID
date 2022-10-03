@@ -52,7 +52,7 @@ def agnostic_sys_id_hover_learner_(
     helicopter_index,
     linearized_model: bool,
     pdl: bool,
-    num_iterations=50,
+    num_iterations=20,
     num_samples_per_iteration=100,
     exploration_distribution_type="desired_trajectory",
     plot=True,
