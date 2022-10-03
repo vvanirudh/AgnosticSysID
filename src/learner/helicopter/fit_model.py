@@ -124,9 +124,9 @@ def fit_linearized_model(
         [next_states, np.zeros_like(controls)]
     )
 
-    solution = np.linalg.lstsq(states_controls, next_states_zeros, rcond=None)[0]
-    A_fit = solution[:13, :13].T
-    B_fit = solution[13:, :13].T
+    solution, residuals, _, _ = np.linalg.lstsq(states_controls, next_states_zeros, rcond=None)
+    A_fit = solution[:13, :13].T if residuals.size != 0 else np.zeros((13, 13))
+    B_fit = solution[13:, :13].T if residuals.size != 0 else np.zeros((13, 4))
     return LinearizedHelicopterModel(
         nominal_model.A + A_fit, nominal_model.B + B_fit, time_varying=False
     )

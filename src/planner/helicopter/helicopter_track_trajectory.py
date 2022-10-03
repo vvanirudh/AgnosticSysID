@@ -126,7 +126,7 @@ def test_tracking_controller_(
     x_result = np.zeros((12, H + 1))
     u_result = np.zeros((4, H))
 
-    x_result[:, 0] = trajectory[0, :]
+    x_result[:, 0] = trajectory[0, :].copy()
     cost = 0.0
     for t in range(H):
 
