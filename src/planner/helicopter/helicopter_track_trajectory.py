@@ -135,7 +135,7 @@ def test_tracking_controller_(
         cost += cost_state(x_result[:, t], trajectory[t, :], Q)
         cost += cost_control(u_result[:, t], hover_trims, R)
 
-        if early_stop and np.linalg.norm(x_result[:, t] - trajectory[t, :]) > 10:
+        if early_stop and np.linalg.norm(x_result[:, t] - trajectory[t, :]) > 5:
             print("Stopping early at t:", t)
             return x_result[:, : t + 1], u_result[:, :t], cost
 

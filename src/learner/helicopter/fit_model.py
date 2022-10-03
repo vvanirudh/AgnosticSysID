@@ -133,6 +133,7 @@ def fit_linearized_model(
 
 
 def fit_linearized_time_varying_model(dataset, nominal_model, nominal_states):
+    H = len(dataset)
     linearized_models = [
         fit_linearized_model(
             dataset[t],
@@ -141,7 +142,7 @@ def fit_linearized_time_varying_model(dataset, nominal_model, nominal_states):
             nominal_control=hover_trims,
             nominal_next_state=nominal_states[t + 1],
         )
-        for t in range(len(dataset))
+        for t in range(H)
     ]
     return LinearizedHelicopterModel(
         [model.A for model in linearized_models],
