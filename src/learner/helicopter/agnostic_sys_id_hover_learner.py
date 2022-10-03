@@ -92,7 +92,7 @@ def agnostic_sys_id_hover_learner_(
             helicopter_index,
             helicopter_env,
             H,
-            add_noise=add_noise,
+            add_noise=False,
         )
     )
     total_time = 0.0
@@ -165,7 +165,7 @@ def agnostic_sys_id_hover_learner_(
                 helicopter_index,
                 helicopter_env,
                 H,
-                add_noise=add_noise,
+                add_noise=False,
             )
         )
 
@@ -181,7 +181,7 @@ def agnostic_sys_id_hover_learner_(
         helicopter_index,
         helicopter_env,
         H,
-        add_noise=add_noise,
+        add_noise=False,
     )
 
     if plot:

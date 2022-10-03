@@ -64,7 +64,7 @@ class HelicopterModel:
 
 class ParameterizedHelicopterModel:
     def __init__(self, m, Ixx, Iyy, Izz, Tx, Ty, Tz, Fx, Fy, Fz):
-        self.m = 6  # m
+        self.m = 10  # m
         self.Ixx = Ixx
         self.Iyy = Iyy
         self.Izz = Izz
