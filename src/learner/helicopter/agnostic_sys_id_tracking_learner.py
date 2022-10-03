@@ -61,10 +61,10 @@ def agnostic_sys_id_tracking_learner_(
     num_samples_per_iteration=500,
     exploration_distribution_type="expert_controller",
     plot=True,
-    add_noise=False,
+    add_noise=True,
 ):
-    # trajectory = desired_trajectory(helicopter_index)
-    trajectory = nose_in_funnel_trajectory(helicopter_index)
+    trajectory = desired_trajectory(helicopter_index)
+    # trajectory = nose_in_funnel_trajectory(helicopter_index)
     H = trajectory.shape[0] - 1
     nominal_model = get_initial_tracking_model(H, linearized_model)
     model = get_initial_tracking_model(H, linearized_model)
