@@ -53,9 +53,7 @@ def evaluate_hover_controller(
         early_stop=False,
         add_noise=add_noise,
     )
-    if isnan(cost):
-        return 1e5
-    return min(cost, 1e5)
+    return cost
 
 
 def evaluate_tracking_controller(
@@ -71,9 +69,7 @@ def evaluate_tracking_controller(
         early_stop=False,
         add_noise=add_noise,
     )
-    if isnan(cost):
-        return 1e5
-    return min(cost, 1e5)
+    return cost
 
 
 def zero_hover_controller(model):
