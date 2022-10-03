@@ -57,9 +57,9 @@ def agnostic_sys_id_tracking_learner_(
     helicopter_index: HelicopterIndex,
     linearized_model: bool,
     pdl: bool,
-    num_iterations=1000,
+    num_iterations=100,
     num_samples_per_iteration=500,
-    exploration_distribution_type="desired_trajectory",
+    exploration_distribution_type="expert_controller",
     plot=True,
     add_noise=True,
 ):
