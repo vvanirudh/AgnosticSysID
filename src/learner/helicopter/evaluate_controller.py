@@ -252,12 +252,16 @@ def optimal_tracking_ilqr_controller_for_parameterized_model(model, trajectory, 
             )
         C_x_f = Qfinal @ (np.append(x_result[:, H] - trajectory[H, :], 1))
         C_xx_f = Qfinal
-        # Run LQR
-        # k, K = lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu)
-        k, K = lqr_linearized_tv_2(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f, residuals)
-        new_controller = LinearControllerWithOffset(
-            k, K, x_result.T, u_result.T, time_invariant=False
-        )
+        try:
+            # k, K = lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu)
+            k, K = lqr_linearized_tv_2(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f, residuals)
+            # k, K = lqr_linearized_tv_3(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f)
+            new_controller = LinearControllerWithOffset(
+                k, K, x_result.T, u_result.T, time_invariant=False
+            )
+        except np.linalg.LinAlgError as err:
+            print(err)
+            new_controller = controller
         # Rollout controller in the model to get trajectory
         alpha_found = False
         alpha = 1.0

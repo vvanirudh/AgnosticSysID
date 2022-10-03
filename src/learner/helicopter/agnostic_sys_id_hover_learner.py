@@ -42,7 +42,7 @@ def get_optimal_hover_controller(model, H, linearized_model: bool, pdl: bool):
     return controller
 
 
-def get_initial_model(H, linearized_model: bool):
+def get_initial_hover_model(H, linearized_model: bool):
     return initial_linearized_model(H) if linearized_model else initial_parameterized_model()
 
 
@@ -59,8 +59,8 @@ def agnostic_sys_id_hover_learner_(
     add_noise=True,
 ):
     H = 400
-    nominal_model = get_initial_model(H, linearized_model)
-    model = get_initial_model(H, linearized_model)
+    nominal_model = get_initial_hover_model(H, linearized_model)
+    model = get_initial_hover_model(H, linearized_model)
     controller = get_optimal_hover_controller(model, H, linearized_model, pdl)
     dataset = deque(maxlen=10000)
 

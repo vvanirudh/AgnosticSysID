@@ -33,6 +33,24 @@ from src.planner.helicopter.helicopter_track_trajectory import (
 )
 
 
+def get_optimal_tracking_controller(model, trajectory, linearized_model: bool, pdl: bool):
+    if linearized_model:
+        controller = optimal_tracking_controller_for_linearized_model(model, trajectory)
+    elif pdl:
+        controller = optimal_tracking_controller_for_parameterized_model(model, trajectory)
+    else:
+        controller = optimal_tracking_ilqr_controller_for_parameterized_model(model, trajectory)
+    return controller
+
+
+def get_initial_tracking_model(H, linearized_model: bool):
+    return (
+        initial_linearized_model_about_hover(H, time_varying=True)
+        if linearized_model
+        else initial_parameterized_model()
+    )
+
+
 def agnostic_sys_id_tracking_learner_(
     helicopter_env: HelicopterEnv,
     helicopter_model,
@@ -48,22 +66,9 @@ def agnostic_sys_id_tracking_learner_(
     # trajectory = desired_trajectory(helicopter_index)
     trajectory = nose_in_funnel_trajectory(helicopter_index)
     H = trajectory.shape[0] - 1
-    # NOTE: the paper uses the linearized model about hover state as the initial model
-    nominal_model = (
-        initial_linearized_model_about_hover(H, time_varying=True)
-        if linearized_model
-        else initial_parameterized_model()
-    )
-    model = (
-        initial_linearized_model_about_hover(H, time_varying=True)
-        if linearized_model
-        else initial_parameterized_model()
-    )
-    controller = (
-        optimal_tracking_controller_for_linearized_model(model, trajectory)
-        if linearized_model
-        else optimal_tracking_controller_for_parameterized_model(model, trajectory)
-    )
+    nominal_model = get_initial_tracking_model(H, linearized_model)
+    model = get_initial_tracking_model(H, linearized_model)
+    controller = get_optimal_tracking_controller(model, trajectory, linearized_model, pdl)
     dataset = [deque(maxlen=10000) for _ in range(H)]
 
     if exploration_distribution_type == "desired_trajectory":
@@ -98,7 +103,12 @@ def agnostic_sys_id_tracking_learner_(
     # Evaluate controller
     costs.append(
         evaluate_tracking_controller(
-            controller, trajectory, helicopter_model, helicopter_index, helicopter_env
+            controller,
+            trajectory,
+            helicopter_model,
+            helicopter_index,
+            helicopter_env,
+            add_noise=False,
         )
     )
     print(costs[-1])
@@ -149,17 +159,12 @@ def agnostic_sys_id_tracking_learner_(
         model = (
             fit_linearized_time_varying_model(dataset, nominal_model, trajectory)
             if linearized_model
-            else fit_parameterized_model(dataset, nominal_model)
+            else fit_parameterized_model(dataset, nominal_model, previous_model=model)
         )
 
         # Compute new optimal controller
         start = time.time()
-        if linearized_model:
-            controller = optimal_tracking_controller_for_linearized_model(model, trajectory)
-        elif pdl:
-            controller = optimal_tracking_controller_for_parameterized_model(model, trajectory)
-        else:
-            controller = optimal_tracking_ilqr_controller_for_parameterized_model(model, trajectory)
+        controller = get_optimal_tracking_controller(model, trajectory, linearized_model, pdl)
         end = time.time()
 
         # Evaluate controller
@@ -170,7 +175,7 @@ def agnostic_sys_id_tracking_learner_(
                 helicopter_model,
                 helicopter_index,
                 helicopter_env,
-                add_noise=add_noise,
+                add_noise=False,
             )
         )
         print(costs[-1])
@@ -187,7 +192,7 @@ def agnostic_sys_id_tracking_learner_(
         helicopter_model,
         helicopter_index,
         helicopter_env,
-        add_noise=add_noise,
+        add_noise=False,
     )
 
     if plot:
