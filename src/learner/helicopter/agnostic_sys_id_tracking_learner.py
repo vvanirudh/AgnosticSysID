@@ -59,7 +59,7 @@ def agnostic_sys_id_tracking_learner_(
     pdl: bool,
     num_iterations=100,
     num_samples_per_iteration=500,
-    exploration_distribution_type="desired_trajectory",
+    exploration_distribution_type="expert_controller",
     plot=True,
     add_noise=False,
 ):
@@ -72,11 +72,8 @@ def agnostic_sys_id_tracking_learner_(
     dataset = [deque(maxlen=10000) for _ in range(H)]
 
     if exploration_distribution_type == "desired_trajectory":
-        # exploration_distribution = desired_tracking_trajectory_exploration_distribution(
-        #     trajectory, 0.0025, 0.0001
-        # )
         exploration_distribution = desired_tracking_trajectory_exploration_distribution(
-            trajectory, 0.0, 0.0
+            trajectory, 0.0025, 0.0001
         )
     elif exploration_distribution_type == "expert_controller":
         exploration_distribution = expert_tracking_exploration_distribution(
