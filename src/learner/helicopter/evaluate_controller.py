@@ -1,5 +1,6 @@
 from cmath import isnan
 import numpy as np
+import warnings
 from src.env.helicopter.helicopter_env import HelicopterEnv
 from src.env.helicopter.helicopter_model import HelicopterIndex, dt
 from src.env.helicopter.linearized_helicopter_dynamics import (
@@ -83,7 +84,7 @@ def zero_hover_controller(model):
 
 
 def random_hover_controller(model):
-    K = np.random.randn(4, 13) * 0.000001
+    K = np.random.randn(4, 13) * 1e-7
     P = np.random.randn(13, 13)
     return LinearController(K, P, hover_at_zero, hover_trims, time_invariant=True)
 
@@ -101,21 +102,135 @@ def optimal_tracking_controller_for_linearized_model(model, trajectory):
     return LinearController(K, P, trajectory, [hover_trims for _ in range(H)], time_invariant=False)
 
 
-def optimal_hover_controller_for_parameterized_model(model):
+def optimal_hover_controller_for_parameterized_model_psdp(model):
     helicopter_env = HelicopterEnv()
     helicopter_index = HelicopterIndex()
     return hover_controller(model, helicopter_index, helicopter_env)
 
 
-def optimal_tracking_controller_for_parameterized_model(model, trajectory):
+def optimal_tracking_controller_for_parameterized_model_psdp(model, trajectory):
     helicopter_env = HelicopterEnv()
     helicopter_index = HelicopterIndex()
     return tracking_controller(trajectory, model, helicopter_index, helicopter_env)
 
 
-def optimal_hover_ilqr_controller_for_parameterized_model(model, H, controller=None):
+def optimal_hover_controller_for_parameterized_model_ilqr(model, H):
     helicopter_env = HelicopterEnv()
     helicopter_index = HelicopterIndex()
+    test_controller_fn = lambda controller, alpha: test_hover_controller_(
+        controller,
+        model,
+        helicopter_index,
+        helicopter_env,
+        H,
+        plot=False,
+        early_stop=False,
+        add_noise=False,
+        alpha=alpha,
+    )
+    target_states = np.array([hover_at_zero.copy() for _ in range(H + 1)])
+    target_controls = np.array([hover_trims.copy() for _ in range(H)])
+    initial_controller = hover_controller(model, helicopter_index, helicopter_env)
+
+    return optimal_controller_for_parameterized_model_ilqr(
+        model, H, initial_controller, test_controller_fn, target_states, target_controls
+    )
+
+
+def optimal_tracking_controller_for_parameterized_model_ilqr(model, trajectory):
+    helicopter_env = HelicopterEnv()
+    helicopter_index = HelicopterIndex()
+    H = trajectory.shape[0] - 1
+    test_controller_fn = lambda controller, alpha: test_tracking_controller_(
+        controller,
+        trajectory,
+        model,
+        helicopter_index,
+        helicopter_env,
+        plot=False,
+        early_stop=False,
+        add_noise=False,
+        alpha=alpha,
+    )
+    target_controls = np.array([hover_trims.copy() for _ in range(H)])
+    initial_controller = tracking_controller(trajectory, model, helicopter_index, helicopter_env)
+
+    return optimal_controller_for_parameterized_model_ilqr(
+        model, H, initial_controller, test_controller_fn, trajectory, target_controls
+    )
+
+
+def optimal_controller_for_parameterized_model_ilqr(
+    model, H, initial_controller, test_controller_fn, target_states, target_controls
+):
+    helicopter_env = HelicopterEnv()
+    helicopter_index = HelicopterIndex()
+    controller = initial_controller
+
+    x_result, u_result, cost = test_controller_fn(controller, 1.0)
+    print("ILQR", cost)
+    NUM_ILQR_ITERATIONS = 1000
+    for _ in range(NUM_ILQR_ITERATIONS):
+        # Linearize dynamics and quadraticize cost around trajectory
+        # TODO: Can parallelize the code below
+        A, B, C_x, C_u, C_xx, C_uu = [], [], [], [], [], []
+        for t in range(H):
+            A_t, B_t = linearized_heli_dynamics_2(
+                x_result[:, t],
+                x_result[:, t + 1],
+                u_result[:, t],
+                dt,
+                model,
+                helicopter_index,
+                helicopter_env,
+                offset=False,
+            )
+            C_x_t = Q[:12, :12] @ (x_result[:, t] - target_states[t, :])
+            C_u_t = R @ (u_result[:, t] - target_controls[t, :])
+            A.append(A_t)
+            B.append(B_t)
+            C_x.append(C_x_t)
+            C_u.append(C_u_t)
+            C_xx.append(Q[:12, :12])
+            C_uu.append(R)
+        C_x_f = Qfinal[:12, :12] @ (x_result[:, H] - target_states[H, :])
+        C_xx_f = Qfinal[:12, :12]
+        # Run LQR
+        try:
+            k, K = lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f)
+            new_controller = LinearControllerWithFeedForwardAndNoOffset(
+                k, K, x_result.T, u_result.T, time_invariant=False
+            )
+        except np.linalg.LinAlgError as err:
+            print(err)
+            new_controller = controller
+
+        # Rollout controller in the model to get trajectory
+        alpha_found = False
+        alpha = 1.0
+        for _ in range(100):
+            new_x_result, new_u_result, new_cost = test_controller_fn(new_controller, alpha)
+            # print("\t", new_cost, alpha)
+            if new_cost < cost:
+                controller = ManualController(new_u_result.T)
+                x_result = new_x_result.copy()
+                u_result = new_u_result.copy()
+                cost = new_cost
+                alpha_found = True
+                break
+            alpha = 0.5 * alpha
+        if not alpha_found:
+            break
+        print("ILQR", cost, alpha)
+
+    return controller
+
+
+###################### DEPRECATED #####################
+
+
+def optimal_hover_ilqr_controller_for_parameterized_model(model, H, controller=None):
+    warnings.warn("DEPRECATED! Use optimal_controller_for_parameterized_model_ilqr")
     if controller is None:
         # controller = hover_controller(model, helicopter_index, helicopter_env)
         # controller = zero_hover_controller(model)
@@ -206,6 +321,7 @@ def optimal_hover_ilqr_controller_for_parameterized_model(model, H, controller=N
 
 
 def optimal_tracking_ilqr_controller_for_parameterized_model(model, trajectory, controller=None):
+    warnings.warn("DEPRECATED! Use optimal_controller_for_parameterized_model_ilqr")
     H = trajectory.shape[0] - 1
     helicopter_env = HelicopterEnv()
     helicopter_index = HelicopterIndex()
@@ -294,6 +410,7 @@ def optimal_tracking_ilqr_controller_for_parameterized_model(model, trajectory, 
 
 
 def optimal_hover_ilqr_controller_for_parameterized_model_2(model, H, controller=None):
+    warnings.warn("DEPRECATED! Use optimal_controller_for_parameterized_model_ilqr")
     helicopter_env = HelicopterEnv()
     helicopter_index = HelicopterIndex()
     if controller is None:

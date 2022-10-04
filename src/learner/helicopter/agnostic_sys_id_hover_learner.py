@@ -20,8 +20,8 @@ from src.learner.helicopter.fit_model import (
 from src.learner.helicopter.evaluate_controller import (
     optimal_hover_controller_for_linearized_model,
     evaluate_hover_controller,
-    optimal_hover_controller_for_parameterized_model,
-    optimal_hover_ilqr_controller_for_parameterized_model_2,
+    optimal_hover_controller_for_parameterized_model_psdp,
+    optimal_hover_controller_for_parameterized_model_ilqr,
 )
 
 import numpy as np
@@ -36,9 +36,9 @@ def get_optimal_hover_controller(model, H, linearized_model: bool, pdl: bool):
     if linearized_model:
         controller = optimal_hover_controller_for_linearized_model(model)
     elif pdl:
-        controller = optimal_hover_controller_for_parameterized_model(model)
+        controller = optimal_hover_controller_for_parameterized_model_psdp(model)
     else:
-        controller = optimal_hover_ilqr_controller_for_parameterized_model_2(model, H)
+        controller = optimal_hover_controller_for_parameterized_model_ilqr(model, H)
     return controller
 
 
@@ -52,7 +52,7 @@ def agnostic_sys_id_hover_learner_(
     helicopter_index,
     linearized_model: bool,
     pdl: bool,
-    num_iterations=20,
+    num_iterations=100,
     num_samples_per_iteration=100,
     exploration_distribution_type="desired_trajectory",
     plot=True,
@@ -95,6 +95,8 @@ def agnostic_sys_id_hover_learner_(
             add_noise=False,
         )
     )
+    print(costs[-1])
+
     total_time = 0.0
     for n in range(num_iterations):
         print("Iteration", n)
@@ -168,11 +170,12 @@ def agnostic_sys_id_hover_learner_(
                 add_noise=False,
             )
         )
+        print(costs[-1])
 
         total_time += end - start
 
     avg_time = total_time / num_iterations
-    best_controller = optimal_hover_ilqr_controller_for_parameterized_model_2(helicopter_model, H)
+    best_controller = optimal_hover_controller_for_parameterized_model_ilqr(helicopter_model, H)
     best_cost = evaluate_hover_controller(
         best_controller,
         x_target,
@@ -183,6 +186,7 @@ def agnostic_sys_id_hover_learner_(
         H,
         add_noise=False,
     )
+    print("Cost of optimal trajectory is", best_cost)
 
     if plot:
         plt.plot(np.arange(num_iterations + 1), costs, label="DAgger")

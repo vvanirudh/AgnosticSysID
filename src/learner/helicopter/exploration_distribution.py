@@ -1,7 +1,7 @@
 import numpy as np
 from src.learner.helicopter.evaluate_controller import (
-    optimal_hover_ilqr_controller_for_parameterized_model,
-    optimal_tracking_ilqr_controller_for_parameterized_model,
+    optimal_hover_controller_for_parameterized_model_ilqr,
+    optimal_tracking_controller_for_parameterized_model_ilqr,
 )
 from src.learner.helicopter.noise import get_hover_noise, get_tracking_noise
 from src.planner.helicopter.helicopter_hover import hover_at_zero, hover_trims, hover_controller
@@ -58,7 +58,7 @@ def expert_hover_exploration_distribution(
     noise_control,
     add_noise=True,
 ):
-    expert_controller = optimal_hover_ilqr_controller_for_parameterized_model(helicopter_model, H)
+    expert_controller = optimal_hover_controller_for_parameterized_model_ilqr(helicopter_model, H)
     exploration_distribution = ExplorationDistribution(H)
     state = hover_at_zero.copy()
     for t in range(H):
@@ -86,7 +86,7 @@ def expert_tracking_exploration_distribution(
     noise_control,
     add_noise=True,
 ):
-    expert_controller = optimal_tracking_ilqr_controller_for_parameterized_model(
+    expert_controller = optimal_tracking_controller_for_parameterized_model_ilqr(
         helicopter_model, trajectory
     )
     H = trajectory.shape[0] - 1

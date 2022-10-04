@@ -19,13 +19,18 @@ from src.utils.express_vector_in_quat_frame import (
 import numpy as np
 import ray
 
+CONTROL_LIMITS = 1e5
+
 
 class HelicopterEnv:
     def __init__(self):
         pass
 
     def step(self, x0, u0, dt, helicopter_model, helicopter_index, noise=None):
-        Fned, Txyz = self.compute_forces_and_torques(x0, u0, helicopter_model, helicopter_index)
+        uclipped = np.clip(u0, -CONTROL_LIMITS, CONTROL_LIMITS)
+        Fned, Txyz = self.compute_forces_and_torques(
+            x0, uclipped, helicopter_model, helicopter_index
+        )
 
         ## add noise
         if noise is not None:
@@ -82,7 +87,10 @@ class HelicopterEnv:
         return Fned, Txyz
 
     def step_batch(self, X, U, dt, helicopter_model, helicopter_index, noise=None):
-        FNED, TXYZ = self.compute_forces_and_torques_batch(X, U, helicopter_model, helicopter_index)
+        Uclipped = np.clip(U, -CONTROL_LIMITS, CONTROL_LIMITS)
+        FNED, TXYZ = self.compute_forces_and_torques_batch(
+            X, Uclipped, helicopter_model, helicopter_index
+        )
 
         if noise is not None:
             FNED = FNED + noise[0:3]

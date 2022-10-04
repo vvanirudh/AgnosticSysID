@@ -1,6 +1,7 @@
 from scipy.linalg import solve_discrete_are
 from numpy.linalg import solve
 import numpy as np
+import warnings
 
 
 def lqr_lti(A, B, Q, R):
@@ -66,7 +67,11 @@ def lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f):
     return k, K
 
 
+######################## DEPRECATED ###############################
+
+
 def lqr_linearized_tv_2(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f, residuals):
+    warnings.warn("DEPRECATED! Please use lqr_linearized_tv")
     H = len(A)
 
     k = [np.zeros(B[0].shape[1]) for _ in range(H)]
@@ -99,6 +104,7 @@ def lqr_linearized_tv_2(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f, residuals):
 
 
 def lqr_linearized_tv_3(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f):
+    warnings.warn("DEPRECATED! Please use lqr_linearized_tv")
     H = len(A)
 
     P = [np.zeros_like(A[0]) for _ in range(H + 1)]
