@@ -18,6 +18,9 @@ from src.planner.helicopter.helicopter_hover import (
 from src.planner.helicopter.helicopter_track_trajectory import (
     test_tracking_controller_,
     tracking_controller,
+    Q_track,
+    R_track,
+    Qfinal_track,
 )
 from src.planner.lqr import (
     lqr_linearized_tv,
@@ -28,7 +31,8 @@ from src.planner.lqr import (
 )
 from src.planner.helicopter.controller import (
     LinearController,
-    LinearControllerWithOffset,
+    LinearControllerWithFeedForward,
+    LinearControllerWithFeedForwardAndNoOffset,
     ManualController,
 )
 
@@ -79,7 +83,7 @@ def zero_hover_controller(model):
 
 
 def random_hover_controller(model):
-    K = np.random.randn(4, 13) * 0.001
+    K = np.random.randn(4, 13) * 0.000001
     P = np.random.randn(13, 13)
     return LinearController(K, P, hover_at_zero, hover_trims, time_invariant=True)
 
@@ -92,7 +96,7 @@ def optimal_hover_controller_for_linearized_model(model):
 
 def optimal_tracking_controller_for_linearized_model(model, trajectory):
     H = trajectory.shape[0] - 1
-    K, P = lqr_ltv(model.A, model.B, Q, R, Qfinal)
+    K, P = lqr_ltv(model.A, model.B, Q_track, R_track, Qfinal_track)
 
     return LinearController(K, P, trajectory, [hover_trims for _ in range(H)], time_invariant=False)
 
@@ -113,9 +117,9 @@ def optimal_hover_ilqr_controller_for_parameterized_model(model, H, controller=N
     helicopter_env = HelicopterEnv()
     helicopter_index = HelicopterIndex()
     if controller is None:
-        controller = hover_controller(model, helicopter_index, helicopter_env)
+        # controller = hover_controller(model, helicopter_index, helicopter_env)
         # controller = zero_hover_controller(model)
-        # controller = random_hover_controller(model)
+        controller = random_hover_controller(model)
 
     x_result, u_result, cost = test_hover_controller_(
         controller,
@@ -158,12 +162,15 @@ def optimal_hover_ilqr_controller_for_parameterized_model(model, H, controller=N
             )
         C_x_f = Qfinal @ (np.append(x_result[:, H] - hover_at_zero, 1))
         C_xx_f = Qfinal
+        import ipdb
+
+        ipdb.set_trace()
         # Run LQR
         try:
             # k, K = lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu)
             k, K = lqr_linearized_tv_2(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f, residuals)
             # k, K = lqr_linearized_tv_3(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f)
-            new_controller = LinearControllerWithOffset(
+            new_controller = LinearControllerWithFeedForward(
                 k, K, x_result.T, u_result.T, time_invariant=False
             )
         except np.linalg.LinAlgError as err:
@@ -173,7 +180,7 @@ def optimal_hover_ilqr_controller_for_parameterized_model(model, H, controller=N
         # Rollout controller in the model to get trajectory
         alpha_found = False
         alpha = 1.0
-        for _ in range(100):
+        for _ in range(10):
             new_x_result, new_u_result, new_cost = test_hover_controller_(
                 new_controller,
                 model,
@@ -185,7 +192,7 @@ def optimal_hover_ilqr_controller_for_parameterized_model(model, H, controller=N
                 alpha=alpha,
                 add_noise=False,
             )
-            # print("\t", new_cost, alpha)
+            print("\t", new_cost, alpha)
             if new_cost < cost:
                 controller = ManualController(new_u_result.T)
                 x_result = new_x_result.copy()
@@ -233,26 +240,26 @@ def optimal_tracking_ilqr_controller_for_parameterized_model(model, trajectory, 
                 helicopter_index,
                 helicopter_env,
             )
-            C_x_t = Q @ (np.append(x_result[:, t] - trajectory[t, :], 1))
-            C_u_t = R @ (u_result[:, t] - hover_trims)
+            C_x_t = Q_track @ (np.append(x_result[:, t] - trajectory[t, :], 1))
+            C_u_t = R_track @ (u_result[:, t] - hover_trims)
             A.append(A_t)
             B.append(B_t)
             C_x.append(C_x_t)
             C_u.append(C_u_t)
-            C_xx.append(Q)
-            C_uu.append(R)
+            C_xx.append(Q_track)
+            C_uu.append(R_track)
             residuals.append(
                 np.append(x_result[:, t + 1], 1)
                 - A_t @ np.append(x_result[:, t], 1)
                 - B_t @ u_result[:, t]
             )
-        C_x_f = Qfinal @ (np.append(x_result[:, H] - trajectory[H, :], 1))
-        C_xx_f = Qfinal
+        C_x_f = Qfinal_track @ (np.append(x_result[:, H] - trajectory[H, :], 1))
+        C_xx_f = Qfinal_track
         try:
             # k, K = lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu)
             k, K = lqr_linearized_tv_2(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f, residuals)
             # k, K = lqr_linearized_tv_3(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f)
-            new_controller = LinearControllerWithOffset(
+            new_controller = LinearControllerWithFeedForward(
                 k, K, x_result.T, u_result.T, time_invariant=False
             )
         except np.linalg.LinAlgError as err:
@@ -273,6 +280,96 @@ def optimal_tracking_ilqr_controller_for_parameterized_model(model, trajectory, 
                 alpha=alpha,
                 add_noise=False,
             )
+            print("\t", new_cost, alpha)
+            if new_cost < cost:
+                controller = ManualController(new_u_result.T)
+                x_result = new_x_result.copy()
+                u_result = new_u_result.copy()
+                cost = new_cost
+                alpha_found = True
+                break
+            alpha = 0.5 * alpha
+        if not alpha_found:
+            break
+        print(cost, alpha)
+
+    return controller
+
+
+def optimal_hover_ilqr_controller_for_parameterized_model_2(model, H, controller=None):
+    helicopter_env = HelicopterEnv()
+    helicopter_index = HelicopterIndex()
+    if controller is None:
+        controller = hover_controller(model, helicopter_index, helicopter_env)
+        # controller = zero_hover_controller(model)
+        # controller = random_hover_controller(model)
+
+    x_result, u_result, cost = test_hover_controller_(
+        controller,
+        model,
+        helicopter_index,
+        helicopter_env,
+        H,
+        plot=False,
+        early_stop=False,
+        add_noise=False,
+    )
+    print(cost)
+
+    for _ in range(1000):
+        # Linearize dynamics and quadraticize cost around trajectory
+        # TODO: Can parallelize the code below
+        A, B, C_x, C_u, C_xx, C_uu, residuals = [], [], [], [], [], [], []
+        for t in range(H):
+            A_t, B_t = linearized_heli_dynamics_2(
+                x_result[:, t],
+                x_result[:, t + 1],
+                u_result[:, t],
+                dt,
+                model,
+                helicopter_index,
+                helicopter_env,
+                offset=False,
+            )
+            C_x_t = Q[:12, :12] @ (x_result[:, t] - hover_at_zero)
+            C_u_t = R @ (u_result[:, t] - hover_trims)
+            A.append(A_t)
+            B.append(B_t)
+            C_x.append(C_x_t)
+            C_u.append(C_u_t)
+            C_xx.append(Q[:12, :12])
+            C_uu.append(R)
+            residuals.append(x_result[:, t + 1] - A_t @ x_result[:, t] - B_t @ u_result[:, t])
+        C_x_f = Qfinal[:12, :12] @ (x_result[:, H] - hover_at_zero)
+        C_xx_f = Qfinal[:12, :12]
+        # Run LQR
+        try:
+            k, K = lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f)
+            # k, K = lqr_linearized_tv_2(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f, residuals)
+            # k, K = lqr_linearized_tv_3(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f)
+            new_controller = LinearControllerWithFeedForwardAndNoOffset(
+                k, K, x_result.T, u_result.T, time_invariant=False
+            )
+        except np.linalg.LinAlgError as err:
+            print(err)
+            new_controller = controller
+
+        # Rollout controller in the model to get trajectory
+        alpha_found = False
+        alpha = 1.0
+        for _ in range(100):
+            new_x_result, new_u_result, new_cost = test_hover_controller_(
+                new_controller,
+                model,
+                helicopter_index,
+                helicopter_env,
+                H,
+                plot=False,
+                early_stop=False,
+                alpha=alpha,
+                add_noise=False,
+            )
+            # print("\t", new_cost, alpha)
             if new_cost < cost:
                 controller = ManualController(new_u_result.T)
                 x_result = new_x_result.copy()

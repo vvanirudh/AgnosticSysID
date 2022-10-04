@@ -22,6 +22,7 @@ from src.learner.helicopter.evaluate_controller import (
     evaluate_hover_controller,
     optimal_hover_controller_for_parameterized_model,
     optimal_hover_ilqr_controller_for_parameterized_model,
+    optimal_hover_ilqr_controller_for_parameterized_model_2,
 )
 
 import numpy as np
@@ -38,7 +39,7 @@ def get_optimal_hover_controller(model, H, linearized_model: bool, pdl: bool):
     elif pdl:
         controller = optimal_hover_controller_for_parameterized_model(model)
     else:
-        controller = optimal_hover_ilqr_controller_for_parameterized_model(model, H)
+        controller = optimal_hover_ilqr_controller_for_parameterized_model_2(model, H)
     return controller
 
 
