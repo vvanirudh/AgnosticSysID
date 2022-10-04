@@ -1,6 +1,6 @@
 import numpy as np
 
-LARGE_VALUE = 1e10
+LARGE_VALUE = np.inf
 
 
 def cost_state(x_result, x_target, Q):

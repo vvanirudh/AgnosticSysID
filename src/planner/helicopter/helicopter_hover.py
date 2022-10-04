@@ -4,7 +4,7 @@ from src.env.helicopter.helicopter_model import dt
 from src.env.helicopter.linearized_helicopter_dynamics import linearized_heli_dynamics_2
 from src.learner.helicopter.noise import get_hover_noise
 from src.planner.lqr import lqr_lti, lqr_ltv, lqr_linearized_tv
-from src.planner.helicopter.controller import LinearController, LinearControllerWithOffset
+from src.planner.helicopter.controller import LinearController
 from src.planner.helicopter.cost import cost_control, cost_final, cost_state, cost_trajectory
 import numpy as np
 import matplotlib.pyplot as plt

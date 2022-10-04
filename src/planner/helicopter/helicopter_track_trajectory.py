@@ -3,7 +3,6 @@ from src.env.helicopter.helicopter_model import dt, HelicopterIndex
 from src.env.helicopter.linearized_helicopter_dynamics import linearized_heli_dynamics_2
 from src.learner.helicopter.noise import get_tracking_noise
 from src.planner.helicopter.cost import cost_control, cost_final, cost_state
-from src.planner.helicopter.helicopter_hover import Q, R, Qfinal
 from src.planner.lqr import lqr_ltv
 from src.planner.helicopter.controller import LinearController
 
@@ -12,6 +11,10 @@ import matplotlib.pyplot as plt
 
 hover_at_zero = np.zeros(12)
 hover_trims = np.zeros(4)
+
+Q_track = 0.1 * np.eye(13)
+R_track = 0.1 * np.eye(4)
+Qfinal_track = Q_track.copy()
 
 
 def nose_in_funnel_trajectory(helicopter_index: HelicopterIndex):
@@ -49,12 +52,11 @@ def desired_trajectory(helicopter_index: HelicopterIndex):
     %able to handle this though and fly as closely as possible (where close is
     %defined by our cost function)
     """
-    H = 300
     hover_at_destination = np.zeros(12)
     hover_at_destination[helicopter_index.ned] = np.array([5, 0, 5])
     target_traj = []
     # First 5 seconds we hover in place
-    for t in range(100):
+    for t in range(101):
         target_traj.append(hover_at_zero)
 
     # Next 5 seconds fly to destination (translation + rotation)
@@ -106,7 +108,7 @@ def tracking_controller(trajectory, helicopter_model, helicopter_index, helicopt
         A.append(A_t)
         B.append(B_t)
 
-    K, P = lqr_ltv(A, B, Q, R, Qfinal)
+    K, P = lqr_ltv(A, B, Q_track, R_track, Qfinal_track)
 
     return LinearController(K, P, trajectory, [hover_trims for _ in range(H)], time_invariant=False)
 
@@ -132,8 +134,8 @@ def test_tracking_controller_(
 
         u_result[:, t] = tracking_controller.act(x_result[:, t], t, alpha=alpha)
 
-        cost += cost_state(x_result[:, t], trajectory[t, :], Q)
-        cost += cost_control(u_result[:, t], hover_trims, R)
+        cost += cost_state(x_result[:, t], trajectory[t, :], Q_track)
+        cost += cost_control(u_result[:, t], hover_trims, R_track)
 
         if early_stop and np.linalg.norm(x_result[:, t] - trajectory[t, :]) > 5:
             print("Stopping early at t:", t)
@@ -145,7 +147,9 @@ def test_tracking_controller_(
             x_result[:, t], u_result[:, t], dt, helicopter_model, helicopter_index, noise_F_T
         )
 
-    cost += cost_final(x_result[:, H], trajectory[H, :], Qfinal)
+    if early_stop:
+        print("Reaching end of horizon at t:", t)
+    cost += cost_final(x_result[:, H], trajectory[H, :], Qfinal_track)
 
     if plot:
         plt.subplot(3, 1, 1)
