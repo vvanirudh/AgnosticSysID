@@ -37,17 +37,17 @@ def lqr_ltv(A, B, Q, R, Qfinal):
     return K, P
 
 
-def lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu):
+def lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f):
     H = len(A)
 
     k = [np.zeros(B[0].shape[1]) for _ in range(H)]
     K = [np.zeros_like(B[0]).T for _ in range(H)]
-    V_x = np.zeros(A[0].shape[0])
-    V_xx = np.zeros_like(A[0])
+    V_x = C_x_f.copy()
+    V_xx = C_xx_f.copy()
 
     for t in range(H - 1, -1, -1):
-        A_t, B_t = A[t], B[t]
-        C_x_t, C_u_t, C_xx_t, C_uu_t = C_x[t], C_u[t], C_xx[t], C_uu[t]
+        A_t, B_t = A[t].copy(), B[t].copy()
+        C_x_t, C_u_t, C_xx_t, C_uu_t = C_x[t].copy(), C_u[t].copy(), C_xx[t].copy(), C_uu[t].copy()
 
         Q_x = C_x_t + A_t.T @ V_x
         Q_u = C_u_t + B_t.T @ V_x
@@ -72,14 +72,14 @@ def lqr_linearized_tv_2(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f, residuals):
     k = [np.zeros(B[0].shape[1]) for _ in range(H)]
     K = [np.zeros_like(B[0]).T for _ in range(H)]
 
-    s, S = C_x_f, C_xx_f
+    s, S = C_x_f.copy(), C_xx_f.copy()
 
     for t in range(H - 1, -1, -1):
-        A_t, B_t = A[t], B[t]
+        A_t, B_t = A[t].copy(), B[t].copy()
 
-        c = residuals[t]
+        c = residuals[t].copy()
 
-        q, Q, r, R = C_x[t], C_xx[t], C_u[t], C_uu[t]
+        q, Q, r, R = C_x[t].copy(), C_xx[t].copy(), C_u[t].copy(), C_uu[t].copy()
 
         C = B_t.T @ S @ A_t
         D = A_t.T @ S @ A_t + Q
@@ -106,11 +106,11 @@ def lqr_linearized_tv_3(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f):
     k = [np.zeros(B[0].shape[1]) for _ in range(H)]
     K = [np.zeros_like(B[0]).T for _ in range(H)]
 
-    P[H], p[H] = C_xx_f, C_x_f
+    P[H], p[H] = C_xx_f.copy(), C_x_f.copy()
 
     for t in range(H - 1, -1, -1):
-        A_t, B_t = A[t], B[t]
-        C_xx_t, C_x_t, C_uu_t, C_u_t = C_xx[t], C_x[t], C_uu[t], C_u[t]
+        A_t, B_t = A[t].copy(), B[t].copy()
+        C_xx_t, C_x_t, C_uu_t, C_u_t = C_xx[t].copy(), C_x[t].copy(), C_uu[t].copy(), C_u[t].copy()
 
         # Q expansion
         gx = C_x_t + A_t.T @ p[t + 1]
