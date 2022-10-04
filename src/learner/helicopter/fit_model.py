@@ -1,3 +1,4 @@
+from collections import deque
 import numpy as np
 import ray
 from scipy.optimize import minimize
@@ -89,7 +90,12 @@ def initial_parameterized_model():
 def construct_training_data(
     dataset, nominal_state=None, nominal_control=None, nominal_next_state=None
 ):
-    states, controls, next_states = tuple(zip(*dataset))
+    if isinstance(dataset, deque):
+        states, controls, next_states = tuple(zip(*dataset))
+    else:
+        # List of deques
+        flat_dataset = [item for data in dataset for item in data]
+        states, controls, next_states = tuple(zip(*flat_dataset))
     states, controls, next_states = np.array(states), np.array(controls), np.array(next_states)
     if nominal_state is not None and nominal_control is not None and nominal_next_state is not None:
         nominal_state_ = nominal_state.reshape(1, -1)
