@@ -47,8 +47,8 @@ def lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f):
     V_xx = C_xx_f.copy()
 
     for t in range(H - 1, -1, -1):
-        A_t, B_t = A[t].copy(), B[t].copy()
-        C_x_t, C_u_t, C_xx_t, C_uu_t = C_x[t].copy(), C_u[t].copy(), C_xx[t].copy(), C_uu[t].copy()
+        A_t, B_t = A[t], B[t]
+        C_x_t, C_u_t, C_xx_t, C_uu_t = C_x[t], C_u[t], C_xx[t], C_uu[t]
 
         Q_x = C_x_t + A_t.T @ V_x
         Q_u = C_u_t + B_t.T @ V_x

@@ -163,8 +163,6 @@ def optimal_tracking_controller_for_parameterized_model_ilqr(model, trajectory):
 def optimal_controller_for_parameterized_model_ilqr(
     model, H, initial_controller, test_controller_fn, target_states, target_controls
 ):
-    helicopter_env = HelicopterEnv()
-    helicopter_index = HelicopterIndex()
     controller = initial_controller
 
     x_result, u_result, cost = test_controller_fn(controller, 1.0)
@@ -173,26 +171,38 @@ def optimal_controller_for_parameterized_model_ilqr(
     for _ in range(NUM_ILQR_ITERATIONS):
         # Linearize dynamics and quadraticize cost around trajectory
         # TODO: Can parallelize the code below
-        A, B, C_x, C_u, C_xx, C_uu = [], [], [], [], [], []
-        for t in range(H):
-            A_t, B_t = linearized_heli_dynamics_2(
+        # A, B, C_x, C_u, C_xx, C_uu = [], [], [], [], [], []
+        # for t in range(H):
+        #     A_t, B_t = linearized_heli_dynamics_2(
+        #         x_result[:, t],
+        #         x_result[:, t + 1],
+        #         u_result[:, t],
+        #         dt,
+        #         model,
+        #         helicopter_index,
+        #         helicopter_env,
+        #         offset=False,
+        #     )
+        #     C_x_t = Q[:12, :12] @ (x_result[:, t] - target_states[t, :])
+        #     C_u_t = R @ (u_result[:, t] - target_controls[t, :])
+        #     A.append(A_t)
+        #     B.append(B_t)
+        #     C_x.append(C_x_t)
+        #     C_u.append(C_u_t)
+        #     C_xx.append(Q[:12, :12])
+        #     C_uu.append(R)
+        result = [
+            linearize_dynamics_and_quadraticize_cost(
                 x_result[:, t],
                 x_result[:, t + 1],
                 u_result[:, t],
-                dt,
+                target_states[t, :],
+                target_controls[t, :],
                 model,
-                helicopter_index,
-                helicopter_env,
-                offset=False,
             )
-            C_x_t = Q[:12, :12] @ (x_result[:, t] - target_states[t, :])
-            C_u_t = R @ (u_result[:, t] - target_controls[t, :])
-            A.append(A_t)
-            B.append(B_t)
-            C_x.append(C_x_t)
-            C_u.append(C_u_t)
-            C_xx.append(Q[:12, :12])
-            C_uu.append(R)
+            for t in range(H)
+        ]
+        A, B, C_x, C_xx, C_u, C_uu = list(zip(*result))
         C_x_f = Qfinal[:12, :12] @ (x_result[:, H] - target_states[H, :])
         C_xx_f = Qfinal[:12, :12]
         # Run LQR
@@ -208,7 +218,7 @@ def optimal_controller_for_parameterized_model_ilqr(
         # Rollout controller in the model to get trajectory
         alpha_found = False
         alpha = 1.0
-        for _ in range(100):
+        for _ in range(20):
             new_x_result, new_u_result, new_cost = test_controller_fn(new_controller, alpha)
             # print("\t", new_cost, alpha)
             if new_cost < cost:
@@ -226,11 +236,35 @@ def optimal_controller_for_parameterized_model_ilqr(
     return controller
 
 
+def linearize_dynamics_and_quadraticize_cost(
+    state, next_state, control, target_state, target_control, model
+):
+    helicopter_index = HelicopterIndex()
+    helicopter_env = HelicopterEnv()
+    A_t, B_t = linearized_heli_dynamics_2(
+        state,
+        next_state,
+        control,
+        dt,
+        model,
+        helicopter_index,
+        helicopter_env,
+        offset=False,
+    )
+    C_x_t = Q[:12, :12] @ (state - target_state)
+    C_u_t = R @ (control - target_control)
+    C_xx_t = Q[:12, :12]
+    C_uu_t = R.copy()
+    return A_t, B_t, C_x_t, C_xx_t, C_u_t, C_uu_t
+
+
 ###################### DEPRECATED #####################
 
 
 def optimal_hover_ilqr_controller_for_parameterized_model(model, H, controller=None):
     warnings.warn("DEPRECATED! Use optimal_controller_for_parameterized_model_ilqr")
+    helicopter_env = HelicopterEnv()
+    helicopter_index = HelicopterIndex()
     if controller is None:
         # controller = hover_controller(model, helicopter_index, helicopter_env)
         # controller = zero_hover_controller(model)
