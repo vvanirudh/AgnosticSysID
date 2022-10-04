@@ -21,7 +21,6 @@ from src.learner.helicopter.evaluate_controller import (
     optimal_hover_controller_for_linearized_model,
     evaluate_hover_controller,
     optimal_hover_controller_for_parameterized_model,
-    optimal_hover_ilqr_controller_for_parameterized_model,
     optimal_hover_ilqr_controller_for_parameterized_model_2,
 )
 
@@ -173,7 +172,7 @@ def agnostic_sys_id_hover_learner_(
         total_time += end - start
 
     avg_time = total_time / num_iterations
-    best_controller = optimal_hover_ilqr_controller_for_parameterized_model(helicopter_model, H)
+    best_controller = optimal_hover_ilqr_controller_for_parameterized_model_2(helicopter_model, H)
     best_cost = evaluate_hover_controller(
         best_controller,
         x_target,
