@@ -162,9 +162,6 @@ def optimal_hover_ilqr_controller_for_parameterized_model(model, H, controller=N
             )
         C_x_f = Qfinal @ (np.append(x_result[:, H] - hover_at_zero, 1))
         C_xx_f = Qfinal
-        import ipdb
-
-        ipdb.set_trace()
         # Run LQR
         try:
             # k, K = lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu)
