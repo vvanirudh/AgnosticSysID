@@ -59,7 +59,7 @@ def agnostic_sys_id_tracking_learner_(
     pdl: bool,
     num_iterations=300,
     num_samples_per_iteration=500,
-    exploration_distribution_type="expert_controller",
+    exploration_distribution_type="desired_trajectory",
     plot=True,
     add_noise=True,
 ):
