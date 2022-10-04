@@ -17,7 +17,7 @@ class LinearController:
         )
 
 
-class LinearControllerWithOffset:
+class LinearControllerWithFeedForward:
     def __init__(self, k, K, nominal_state, nominal_control, time_invariant=False):
         self.k = k
         self.K = K
@@ -34,6 +34,26 @@ class LinearControllerWithOffset:
             else (1 - alpha) * self.nominal_control[t]
             + alpha * self.k[t]
             + self.K[t] @ (np.append(x - (1 - alpha) * self.nominal_state[t], 1))
+        )
+
+
+class LinearControllerWithFeedForwardAndNoOffset:
+    def __init__(self, k, K, nominal_state, nominal_control, time_invariant=False):
+        self.k = k
+        self.K = K
+        self.nominal_state = nominal_state
+        self.nominal_control = nominal_control
+        self.time_invariant = time_invariant
+
+    def act(self, x, t, alpha=1.0):
+        return (
+            (1 - alpha) * self.nominal_control
+            + alpha * self.k
+            + self.K @ (x - (1 - alpha) * self.nominal_state)
+            if self.time_invariant
+            else (1 - alpha) * self.nominal_control[t]
+            + alpha * self.k[t]
+            + self.K[t] @ (x - (1 - alpha) * self.nominal_state[t])
         )
 
 
