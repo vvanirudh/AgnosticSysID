@@ -2,7 +2,7 @@ import numpy as np
 
 
 def linearized_heli_dynamics_2(
-    xstar0, xstar1, ustar0, dt, helicopter_model, helicopter_index, helicopter_env
+    xstar0, xstar1, ustar0, dt, helicopter_model, helicopter_index, helicopter_env, offset=True
 ):
     """% Computes linearized dynamics of the form:
     % [x(t+dt) - xstar1; 1] = A [x(t) - xstar0; 1] + B (u(t) - ustar0)
@@ -32,18 +32,20 @@ def linearized_heli_dynamics_2(
 
         B.append((fx_t1p - fx_t1m) / epsilon[i] / 2)
 
-    A.append(x1 - xstar1)
+    if offset:
+        A.append(x1 - xstar1)
 
     A = np.array(A).T
     B = np.array(B).T
 
-    last_row_A = np.zeros((1, A.shape[0] + 1))
-    last_row_A[0, -1] = 1
+    if offset:
+        last_row_A = np.zeros((1, A.shape[0] + 1))
+        last_row_A[0, -1] = 1
 
-    last_row_B = np.zeros((1, B.shape[1]))
+        last_row_B = np.zeros((1, B.shape[1]))
 
-    A = np.vstack([A, last_row_A])
-    B = np.vstack([B, last_row_B])
+        A = np.vstack([A, last_row_A])
+        B = np.vstack([B, last_row_B])
 
     return A, B
 
