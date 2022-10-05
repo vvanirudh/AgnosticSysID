@@ -8,9 +8,8 @@ from src.env.helicopter.helicopter_env import HelicopterEnv, setup_env
 from src.learner.helicopter.evaluate_controller import (
     evaluate_tracking_controller,
     optimal_tracking_controller_for_linearized_model,
-    optimal_tracking_controller_for_parameterized_model,
-    optimal_tracking_ilqr_controller_for_parameterized_model,
-    random_hover_controller,
+    optimal_tracking_controller_for_parameterized_model_psdp,
+    optimal_tracking_controller_for_parameterized_model_ilqr,
 )
 from src.learner.helicopter.exploration_distribution import (
     desired_tracking_trajectory_exploration_distribution,
@@ -37,9 +36,9 @@ def get_optimal_tracking_controller(model, trajectory, linearized_model: bool, p
     if linearized_model:
         controller = optimal_tracking_controller_for_linearized_model(model, trajectory)
     elif pdl:
-        controller = optimal_tracking_controller_for_parameterized_model(model, trajectory)
+        controller = optimal_tracking_controller_for_parameterized_model_psdp(model, trajectory)
     else:
-        controller = optimal_tracking_ilqr_controller_for_parameterized_model(model, trajectory)
+        controller = optimal_tracking_controller_for_parameterized_model_ilqr(model, trajectory)
     return controller
 
 
@@ -187,7 +186,7 @@ def agnostic_sys_id_tracking_learner_(
         total_time += end - start
 
     avg_time = total_time / num_iterations
-    best_controller = optimal_tracking_ilqr_controller_for_parameterized_model(
+    best_controller = optimal_tracking_controller_for_parameterized_model_ilqr(
         helicopter_model, trajectory
     )
     best_cost = evaluate_tracking_controller(
@@ -198,6 +197,7 @@ def agnostic_sys_id_tracking_learner_(
         helicopter_env,
         add_noise=False,
     )
+    print("Cost of optimal trajectory is", best_cost)
 
     if plot:
         plt.plot(np.arange(num_iterations + 1), costs, label="DAgger")
@@ -218,10 +218,10 @@ def agnostic_sys_id_tracking_learner_(
     return controller, avg_time, costs, best_cost
 
 
-def agnostic_sys_id_tracking_learner(linearized_model: bool, pdl: bool):
+def agnostic_sys_id_tracking_learner(linearized_model: bool, pdl: bool, add_noise: bool = True):
     np.random.seed(0)
     model, index, env = setup_env()
-    agnostic_sys_id_tracking_learner_(env, model, index, linearized_model, pdl)
+    agnostic_sys_id_tracking_learner_(env, model, index, linearized_model, pdl, add_noise=add_noise)
 
 
 if __name__ == "__main__":
