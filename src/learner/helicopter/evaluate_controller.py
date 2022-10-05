@@ -26,8 +26,6 @@ from src.planner.helicopter.helicopter_track_trajectory import (
 )
 from src.planner.lqr import (
     lqr_linearized_tv,
-    lqr_linearized_tv_2,
-    lqr_linearized_tv_3,
     lqr_lti,
     lqr_ltv,
 )
@@ -243,7 +241,7 @@ def linearize_dynamics_and_quadraticize_cost(
 
 ###################### DEPRECATED #####################
 
-
+"""
 def optimal_hover_ilqr_controller_for_parameterized_model(model, H, controller=None):
     warnings.warn("DEPRECATED! Use optimal_controller_for_parameterized_model_ilqr")
     helicopter_env = HelicopterEnv()
@@ -514,3 +512,4 @@ def optimal_hover_ilqr_controller_for_parameterized_model_2(model, H, controller
         print(cost, alpha)
 
     return controller
+"""
