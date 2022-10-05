@@ -1,6 +1,5 @@
 from collections import deque
 import numpy as np
-import ray
 from scipy.optimize import minimize
 from src.env.helicopter.helicopter_env import (
     HelicopterEnv,
@@ -163,25 +162,24 @@ def fit_parameterized_model(dataset, nominal_model, previous_model=None):
     helicopter_index = HelicopterIndex()
     # TODO: Maybe we can learn residual on the nominal model?
     def loss_fn_(params):
-        if not USE_RAY:
-            model = ParameterizedHelicopterModel(
-                *ParameterizedHelicopterModel.unpack_params(params)
-            )
-            predicted_next_states = helicopter_env.step_batch(
-                states, controls, dt, model, helicopter_index
-            )
-        else:
-            predicted_next_states = step_batch_parameterized_model(states, controls, dt, params)
+        unpacked_params = ParameterizedHelicopterModel.unpack_params(params)
+        model = ParameterizedHelicopterModel(*unpacked_params)
+        predicted_next_states = helicopter_env.step_batch(
+            states, controls, dt, model, helicopter_index
+        )
         return np.mean(np.linalg.norm(predicted_next_states - next_states, axis=1))
 
     result = minimize(
         loss_fn_,
-        nominal_model.params if previous_model is None else previous_model.params,
-        tol=0.00001,
-        options={"disp": True},
+        nominal_model.params,  # if previous_model is None else previous_model.params,
+        method="BFGS",
+        tol=None,
+        options={"disp": True, "gtol": 1e-5},
     )
     if result.success:
-        return ParameterizedHelicopterModel(*ParameterizedHelicopterModel.unpack_params(result.x))
+        params = result.x.copy()
+        unpacked_params = ParameterizedHelicopterModel.unpack_params(params)
+        return ParameterizedHelicopterModel(*unpacked_params)
     else:
         raise Exception(result.message)
 
