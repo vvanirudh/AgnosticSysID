@@ -243,4 +243,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-noise", action="store_true", default=False)
     args = parser.parse_args()
+    ray.init()
     agnostic_sys_id_hover_experiment(add_noise=(not args.no_noise))
