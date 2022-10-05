@@ -208,22 +208,30 @@ def agnostic_sys_id_hover_learner_(
     return controller, avg_time, costs, best_cost
 
 
-def agnostic_sys_id_hover_learner(linearized_model: bool, pdl: bool, plot=True, add_noise=True):
+def agnostic_sys_id_hover_learner(
+    linearized_model: bool, pdl: bool, plot=True, add_noise=True, num_iterations=100
+):
     np.random.seed(0)
     model, index, env = setup_env()
     return agnostic_sys_id_hover_learner_(
-        env, model, index, linearized_model, pdl, plot=plot, add_noise=add_noise
+        env,
+        model,
+        index,
+        linearized_model,
+        pdl,
+        plot=plot,
+        add_noise=add_noise,
+        num_iterations=num_iterations,
     )
 
 
-def agnostic_sys_id_hover_experiment(add_noise=True):
+def agnostic_sys_id_hover_experiment(add_noise=True, num_iterations=100):
     _, ag_time, ag_costs, best_cost = agnostic_sys_id_hover_learner(
-        False, False, plot=False, add_noise=add_noise
+        False, False, plot=False, add_noise=add_noise, num_iterations=num_iterations
     )
     _, pdl_time, pdl_costs, _ = agnostic_sys_id_hover_learner(
-        False, True, plot=False, add_noise=add_noise
+        False, True, plot=False, add_noise=add_noise, num_iterations=num_iterations
     )
-    num_iterations = len(ag_costs)
     plt.plot(np.arange(num_iterations), ag_costs, label="Agnostic SysID " + str(ag_time))
     plt.plot(np.arange(num_iterations), pdl_costs, label="PDL " + str(pdl_time))
     plt.plot(
@@ -242,6 +250,9 @@ def agnostic_sys_id_hover_experiment(add_noise=True):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-noise", action="store_true", default=False)
+    parser.add_argument("--num_iterations", type=int, default=40)
     args = parser.parse_args()
     ray.init()
-    agnostic_sys_id_hover_experiment(add_noise=(not args.no_noise))
+    agnostic_sys_id_hover_experiment(
+        add_noise=(not args.no_noise), num_iterations=args.num_iterations
+    )
