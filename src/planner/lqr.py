@@ -69,7 +69,7 @@ def lqr_linearized_tv(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f):
 
 ######################## DEPRECATED ###############################
 
-
+"""
 def lqr_linearized_tv_2(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f, residuals):
     warnings.warn("DEPRECATED! Please use lqr_linearized_tv")
     H = len(A)
@@ -135,3 +135,4 @@ def lqr_linearized_tv_3(A, B, C_x, C_u, C_xx, C_uu, C_x_f, C_xx_f):
         P[t] = Gxx + K[t].T @ Guu @ K[t] + Gux.T @ K[t] + K[t].T @ Gux
 
     return k, K
+"""
