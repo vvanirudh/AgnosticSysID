@@ -16,10 +16,6 @@ from src.env.helicopter.helicopter_model import (
     dt,
 )
 
-USE_RAY = False
-if USE_RAY and not ray.is_initialized():
-    ray.init()
-
 
 def initial_linearized_model(H, time_varying=False):
     A = np.eye(13) if not time_varying else [np.eye(13) for _ in range(H)]
@@ -173,7 +169,6 @@ def fit_parameterized_model(dataset, nominal_model, previous_model=None):
         loss_fn_,
         nominal_model.params,  # if previous_model is None else previous_model.params,
         method="BFGS",
-        tol=None,
         options={"disp": True, "gtol": 1e-5},
     )
     if result.success:
