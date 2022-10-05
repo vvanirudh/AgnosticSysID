@@ -1,6 +1,8 @@
 import numpy as np
+from numba import njit
 
 
+@njit
 def quat_multiply(lq, rq):
     quat = np.zeros(4)
 
@@ -17,6 +19,7 @@ def quat_multiply(lq, rq):
     return quat
 
 
+@njit
 def quat_multiply_batch(lq_batch, rq_batch):
     quat_batch = np.zeros((lq_batch.shape[0], 4))
 

@@ -1,7 +1,9 @@
 from src.utils.quat_multiply import quat_multiply, quat_multiply_batch
 import numpy as np
+from numba import njit
 
 
+@njit
 def rotate_vector(vin, q):
     return quat_multiply(
         quat_multiply(q, np.array([vin[0], vin[1], vin[2], 0])),
@@ -9,6 +11,7 @@ def rotate_vector(vin, q):
     )[0:3]
 
 
+@njit
 def rotate_vector_batch(vin_batch, q_batch):
     q_transformed_batch = -1 * q_batch.copy()
     q_transformed_batch[:, 3] *= -1
