@@ -232,6 +232,12 @@ def agnostic_sys_id_hover_experiment(add_noise=True, num_iterations=100):
     _, pdl_time, pdl_costs, _ = agnostic_sys_id_hover_learner(
         False, True, plot=False, add_noise=add_noise, num_iterations=num_iterations
     )
+    filename = (
+        "data/" + "agnostic_sys_id_" + str(num_iterations) + "_hover_" + str(add_noise) + ".npy"
+    )
+    np.save(filename, np.array(ag_costs))
+    filename = "data/" + "pdl_" + str(num_iterations) + "_hover_" + str(add_noise) + ".npy"
+    np.save(filename, pdl_costs)
     xrange = len(ag_costs)
     plt.plot(np.arange(xrange), ag_costs, label="Agnostic SysID " + str(ag_time))
     plt.plot(np.arange(xrange), pdl_costs, label="PDL " + str(pdl_time))
