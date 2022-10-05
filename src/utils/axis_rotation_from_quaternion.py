@@ -1,7 +1,9 @@
 from cgitb import small
 import numpy as np
+from numba import njit
 
 
+@njit
 def axis_rotation_from_quaternion(q):
     q_norm = np.linalg.norm(q[0:3])
     rotation_angle = np.arcsin(q_norm) * 2
@@ -12,8 +14,10 @@ def axis_rotation_from_quaternion(q):
     return q[0:3] / q_norm * rotation_angle
 
 
+@njit
 def axis_rotation_from_quaternion_batch(q_batch):
-    q_norm_batch = np.linalg.norm(q_batch[:, 0:3], axis=1)
+    q_norm_batch = np.array([np.linalg.norm(q_batch[i, 0:3]) for i in range(q_batch.shape[0])])
+    # q_norm_batch = np.linalg.norm(q_batch[:, 0:3], axis=1)
     rotation_angle_batch = np.arcsin(q_norm_batch) * 2
 
     eps = 1e-6

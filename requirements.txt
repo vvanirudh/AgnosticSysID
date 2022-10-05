@@ -6,3 +6,4 @@ ipdb
 scipy
 torch
 ray
+numba
