@@ -73,7 +73,11 @@ class HelicopterEnv:
         F_ned_minus_g = rotate_vector(Fxyz_minus_g, quat)
 
         # add gravity to complete the forces
-        Fned = F_ned_minus_g + helicopter_model.m * np.array([0, 0, 9.81])
+        # if isinstance(helicopter_model, HelicopterModel):
+        #     Fned = F_ned_minus_g + helicopter_model.m * np.array([0, 0, 9.81])
+        # else:
+        #     Fned = F_ned_minus_g.copy()
+        Fned = F_ned_minus_g + helicopter_model.m * np.array([0, 0, helicopter_model.g])
 
         ## Torques
         Txyz = np.array(
