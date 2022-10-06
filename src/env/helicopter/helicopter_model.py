@@ -12,6 +12,7 @@ class HelicopterModel:
         self.Iyy = 0.3
         self.Izz = 0.3
         self.Ixy = self.Ixz = self.Iyz = 0
+        self.g = 9.81
 
         ## Aerodynamic forces parameters
         self.Tx = np.array([0, -3.47, 13.20]) * self.Ixx
@@ -69,6 +70,7 @@ class ParameterizedHelicopterModel:
         self.Iyy = Iyy
         self.Izz = Izz
         self.Ixy = self.Ixz = self.Iyz = 0
+        self.g = 9.81
 
         self.Tx = Tx * self.Ixx
         self.Ty = Ty * self.Iyy
