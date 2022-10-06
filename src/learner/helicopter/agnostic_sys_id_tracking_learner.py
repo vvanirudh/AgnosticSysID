@@ -2,6 +2,7 @@ from collections import deque
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+import argparse
 
 from src.env.helicopter.helicopter_model import HelicopterIndex, dt
 from src.env.helicopter.helicopter_env import HelicopterEnv, setup_env
@@ -218,11 +219,21 @@ def agnostic_sys_id_tracking_learner_(
     return controller, avg_time, costs, best_cost
 
 
-def agnostic_sys_id_tracking_learner(linearized_model: bool, pdl: bool, add_noise: bool = True):
+def agnostic_sys_id_tracking_learner(
+    linearized_model: bool, pdl: bool, add_noise: bool = True, num_iterations=100
+):
     np.random.seed(0)
     model, index, env = setup_env()
-    agnostic_sys_id_tracking_learner_(env, model, index, linearized_model, pdl, add_noise=add_noise)
+    agnostic_sys_id_tracking_learner_(
+        env, model, index, linearized_model, pdl, add_noise=add_noise, num_iterations=num_iterations
+    )
 
 
 if __name__ == "__main__":
-    agnostic_sys_id_tracking_learner(True, False)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--num_iterations", type=int, default=50)
+    parser.add_argument("--no-noise", action="store_true")
+    args = parser.parse_args()
+    agnostic_sys_id_tracking_learner(
+        False, False, add_noise=(not args.no_noise), num_iterations=args.num_iterations
+    )
