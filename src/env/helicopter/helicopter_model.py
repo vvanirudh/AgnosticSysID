@@ -43,12 +43,13 @@ class HelicopterModel:
                 [self.Fx],
                 self.Fy,
                 self.Fz,
+                [self.g],
             ]
         )
 
     @staticmethod
     def unpack_params(params):
-        assert params.shape[0] == 19
+        assert params.shape[0] == 20
         return [
             params[0],
             params[1],
@@ -60,17 +61,18 @@ class HelicopterModel:
             params[13],
             params[14:16],
             params[16:19],
+            params[19],
         ]
 
 
-class ParameterizedHelicopterModel:
-    def __init__(self, m, Ixx, Iyy, Izz, Tx, Ty, Tz, Fx, Fy, Fz):
+class ParameterizedHelicopterModel(HelicopterModel):
+    def __init__(self, m, Ixx, Iyy, Izz, Tx, Ty, Tz, Fx, Fy, Fz, g):
         self.m = m
         self.Ixx = Ixx
         self.Iyy = Iyy
         self.Izz = Izz
         self.Ixy = self.Ixz = self.Iyz = 0
-        self.g = 9.81
+        self.g = g
 
         self.Tx = Tx * self.Ixx
         self.Ty = Ty * self.Iyy
@@ -79,46 +81,6 @@ class ParameterizedHelicopterModel:
         self.Fx = Fx * m
         self.Fy = Fy * m
         self.Fz = Fz * m
-
-    @property
-    def I(self):
-        return np.array(
-            [
-                [self.Ixx, self.Ixy, self.Ixz],
-                [self.Ixy, self.Iyy, self.Iyz],
-                [self.Ixz, self.Iyz, self.Izz],
-            ]
-        )
-
-    @property
-    def params(self):
-        return np.concatenate(
-            [
-                [self.m, self.Ixx, self.Iyy, self.Izz],
-                self.Tx,
-                self.Ty,
-                self.Tz,
-                [self.Fx],
-                self.Fy,
-                self.Fz,
-            ]
-        )
-
-    @staticmethod
-    def unpack_params(params):
-        assert params.shape[0] == 19
-        return [
-            params[0],
-            params[1],
-            params[2],
-            params[3],
-            params[4:7],
-            params[7:10],
-            params[10:13],
-            params[13],
-            params[14:16],
-            params[16:19],
-        ]
 
 
 class HelicopterIndex:
