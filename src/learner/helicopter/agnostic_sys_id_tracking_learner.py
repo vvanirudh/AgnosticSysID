@@ -3,6 +3,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 import argparse
+import ray
 
 from src.env.helicopter.helicopter_model import HelicopterIndex, dt
 from src.env.helicopter.helicopter_env import HelicopterEnv, setup_env
@@ -234,6 +235,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_iterations", type=int, default=50)
     parser.add_argument("--no-noise", action="store_true")
     args = parser.parse_args()
+    ray.init()
     agnostic_sys_id_tracking_learner(
         False, False, add_noise=(not args.no_noise), num_iterations=args.num_iterations
     )

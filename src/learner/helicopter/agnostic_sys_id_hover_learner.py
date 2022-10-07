@@ -13,6 +13,7 @@ from src.learner.helicopter.exploration_distribution import (
 )
 from src.learner.helicopter.fit_model import (
     fit_linearized_model,
+    fit_linearized_model_moment,
     fit_parameterized_model,
     initial_linearized_model,
     initial_parameterized_model,
@@ -30,6 +31,7 @@ from collections import deque
 import matplotlib.pyplot as plt
 import time
 import argparse
+import pickle as pkl
 
 
 def get_optimal_hover_controller(model, H, linearized_model: bool, pdl: bool):
@@ -43,7 +45,11 @@ def get_optimal_hover_controller(model, H, linearized_model: bool, pdl: bool):
 
 
 def get_initial_hover_model(H, linearized_model: bool):
-    return initial_linearized_model(H) if linearized_model else initial_parameterized_model()
+    return (
+        initial_linearized_model(H)
+        if linearized_model
+        else initial_parameterized_model(use_true_model=False)
+    )
 
 
 def agnostic_sys_id_hover_learner_(
@@ -54,11 +60,11 @@ def agnostic_sys_id_hover_learner_(
     pdl: bool,
     num_iterations=100,
     num_samples_per_iteration=100,
-    exploration_distribution_type="desired_trajectory",
+    exploration_distribution_type="expert_controller_with_noise",
     plot=True,
     add_noise=True,
 ):
-    H = 400
+    H = 100
     nominal_model = get_initial_hover_model(H, linearized_model)
     model = get_initial_hover_model(H, linearized_model)
     controller = get_optimal_hover_controller(model, H, linearized_model, pdl)
@@ -205,7 +211,7 @@ def agnostic_sys_id_hover_learner_(
         plt.savefig(exp_name + ".png")
         # plt.show()
 
-    return controller, avg_time, costs, best_cost
+    return controller, avg_time, costs, best_cost, model
 
 
 def agnostic_sys_id_hover_learner(
@@ -226,18 +232,20 @@ def agnostic_sys_id_hover_learner(
 
 
 def agnostic_sys_id_hover_experiment(add_noise=True, num_iterations=100):
-    _, ag_time, ag_costs, best_cost = agnostic_sys_id_hover_learner(
+    _, ag_time, ag_costs, best_cost, ag_model = agnostic_sys_id_hover_learner(
         False, False, plot=False, add_noise=add_noise, num_iterations=num_iterations
     )
-    _, pdl_time, pdl_costs, _ = agnostic_sys_id_hover_learner(
+    _, pdl_time, pdl_costs, _, pdl_model = agnostic_sys_id_hover_learner(
         False, True, plot=False, add_noise=add_noise, num_iterations=num_iterations
     )
-    filename = (
-        "data/" + "agnostic_sys_id_" + str(num_iterations) + "_hover_" + str(add_noise) + ".npy"
-    )
-    np.save(filename, np.array(ag_costs))
-    filename = "data/" + "pdl_" + str(num_iterations) + "_hover_" + str(add_noise) + ".npy"
-    np.save(filename, pdl_costs)
+
+    filename = "data/" + "agnostic_sys_id_" + str(num_iterations) + "_hover_" + str(add_noise)
+    np.save(filename + ".npy", np.array(ag_costs))
+    pkl.dump(ag_model, open(filename + ".pkl", "wb"))
+    filename = "data/" + "pdl_" + str(num_iterations) + "_hover_" + str(add_noise)
+    np.save(filename + ".npy", pdl_costs)
+    pkl.dump(pdl_model, open(filename + ".pkl", "wb"))
+
     xrange = len(ag_costs)
     plt.plot(np.arange(xrange), ag_costs, label="Agnostic SysID " + str(ag_time))
     plt.plot(np.arange(xrange), pdl_costs, label="PDL " + str(pdl_time))
@@ -257,7 +265,7 @@ def agnostic_sys_id_hover_experiment(add_noise=True, num_iterations=100):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-noise", action="store_true", default=False)
-    parser.add_argument("--num_iterations", type=int, default=40)
+    parser.add_argument("--num_iterations", type=int, default=100)
     args = parser.parse_args()
     ray.init()
     agnostic_sys_id_hover_experiment(
