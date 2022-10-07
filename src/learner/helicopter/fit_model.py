@@ -156,7 +156,7 @@ def fit_linearized_model_moment(
 
     def loss_fn_(params):
         A_fit = params[: n * n].reshape(n, n)
-        B_fit = params[n * n :].reshape(m, n)
+        B_fit = params[n * n :].reshape(n, m)
 
         predicted_next_states = states @ A_fit.T + controls @ B_fit.T
         return np.sum(
@@ -171,7 +171,7 @@ def fit_linearized_model_moment(
     )
     params = result.x.copy()
     A_fit = params[: n * n].reshape(n, n)
-    B_fit = params[n * n :].reshape(m, n)
+    B_fit = params[n * n :].reshape(n, m)
     return LinearizedHelicopterModel(A_fit, B_fit, time_varying=False)
 
 
