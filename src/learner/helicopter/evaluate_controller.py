@@ -197,7 +197,7 @@ def optimal_controller_for_parameterized_model_ilqr(
         # Rollout controller in the model to get trajectory
         alpha_found = False
         alpha = 1.0
-        NUM_LINE_SEARCH_ITERATIONS = 30
+        NUM_LINE_SEARCH_ITERATIONS = 15
         for _ in range(NUM_LINE_SEARCH_ITERATIONS):
             new_x_result, new_u_result, new_cost = test_controller_fn(new_controller, alpha)
             # print("\t", new_cost, alpha)

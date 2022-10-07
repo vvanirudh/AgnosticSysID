@@ -45,7 +45,10 @@ def initial_linearized_model_about_hover(H, time_varying=False):
     return LinearizedHelicopterModel(A, B, time_varying=time_varying)
 
 
-def initial_parameterized_model():
+def initial_parameterized_model(use_true_model=False):
+    if use_true_model:
+        return HelicopterModel()
+
     m = np.random.rand() * 10
     Ixx = np.random.rand()
     Iyy = np.random.rand()
@@ -65,6 +68,8 @@ def initial_parameterized_model():
     # Fz = np.array([-10, -1, -25]) * m
     Fz = np.array([-20 * np.random.rand(), -2 * np.random.rand(), -50 * np.random.rand()])
 
+    g = np.random.rand() * 20
+
     # m = 5  # kg
     # Ixx = 0.3
     # Iyy = 0.3
@@ -78,7 +83,7 @@ def initial_parameterized_model():
     # Fy = np.array([0, -0.12]) * m
     # Fz = np.array([-9.81, -0.0005, -27.5]) * m
 
-    return ParameterizedHelicopterModel(m, Ixx, Iyy, Izz, Tx, Ty, Tz, Fx, Fy, Fz)
+    return ParameterizedHelicopterModel(m, Ixx, Iyy, Izz, Tx, Ty, Tz, Fx, Fy, Fz, g)
     # return HelicopterModel()
 
 
@@ -133,6 +138,43 @@ def fit_linearized_model(
     )
 
 
+def fit_linearized_model_moment(
+    dataset, nominal_model, P, nominal_state=None, nominal_control=None, nominal_next_state=None
+):
+    if len(dataset) == 0:
+        return nominal_model
+    n = nominal_model.A.shape[0]
+    m = nominal_model.B.shape[1]
+    states, controls, next_states = construct_training_data(
+        dataset,
+        nominal_state=nominal_state,
+        nominal_control=nominal_control,
+        nominal_next_state=nominal_next_state,
+    )
+
+    targets = np.diagonal(next_states @ P @ next_states.T)
+
+    def loss_fn_(params):
+        A_fit = params[: n * n].reshape(n, n)
+        B_fit = params[n * n :].reshape(m, n)
+
+        predicted_next_states = states @ A_fit.T + controls @ B_fit.T
+        return np.sum(
+            np.abs(np.diagonal(predicted_next_states @ P @ predicted_next_states.T) - targets)
+        )
+
+    result = minimize(
+        loss_fn_,
+        np.concatenate([nominal_model.A.flatten(), nominal_model.B.flatten()]),
+        method="BFGS",
+        options={"disp": True, "gtol": 1e-4},
+    )
+    params = result.x.copy()
+    A_fit = params[: n * n].reshape(n, n)
+    B_fit = params[n * n :].reshape(m, n)
+    return LinearizedHelicopterModel(A_fit, B_fit, time_varying=False)
+
+
 def fit_linearized_time_varying_model(dataset, nominal_model, nominal_states):
     H = len(dataset)
     linearized_models = [
@@ -167,16 +209,13 @@ def fit_parameterized_model(dataset, nominal_model, previous_model=None):
 
     result = minimize(
         loss_fn_,
-        nominal_model.params,  # if previous_model is None else previous_model.params,
+        nominal_model.params if previous_model is None else previous_model.params,
         method="BFGS",
-        options={"disp": True, "gtol": 1e-5},
+        options={"disp": True, "gtol": 1e-4},
     )
-    if result.success:
-        params = result.x.copy()
-        unpacked_params = ParameterizedHelicopterModel.unpack_params(params)
-        return ParameterizedHelicopterModel(*unpacked_params)
-    else:
-        raise Exception(result.message)
+    params = result.x.copy()
+    unpacked_params = ParameterizedHelicopterModel.unpack_params(params)
+    return ParameterizedHelicopterModel(*unpacked_params)
 
 
 """
